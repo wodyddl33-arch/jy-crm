@@ -824,7 +824,7 @@ function renderDash() {
     const applyIntro = isIntro && (introScope==='계약금만'||introScope==='둘다');
     const introAmt = applyIntro ? Math.round(amountWon*((parseFloat(c.introRatio)||0)/100)) : 0;
     // 실수령 계약금 (만원 단위)
-    const net = Math.round((amountWon - cardFee - jjkAmt - introAmt) / 10000);
+    const net = Math.round((amountWon - cardFee - jjkAmt - introAmt) / 1000) / 10;
     return sum + net;
   }, 0);
   const feeSum = clients.reduce((sum, c) => {
@@ -841,7 +841,7 @@ function renderDash() {
   document.getElementById('s-total').innerHTML = `${clients.length}<span class="stat-unit">명</span>`;
   document.getElementById('s-new').innerHTML   = `${thisMonthClients.length}<span class="stat-unit">건</span>`;
   document.getElementById('s-new-sub').textContent = `${now.getFullYear()}년 ${now.getMonth()+1}월`;
-  document.getElementById('s-contract').innerHTML = `${contractSum.toLocaleString()}<span class="stat-unit">만원</span>`;
+  document.getElementById('s-contract').innerHTML = `${contractSum.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:1})}<span class="stat-unit">만원</span>`;
   document.getElementById('s-fee').innerHTML = `${feeSum.toLocaleString()}<span class="stat-unit">만원</span>`;
 
   renderDashCharts();
