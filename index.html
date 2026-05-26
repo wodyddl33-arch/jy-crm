@@ -816,7 +816,7 @@ function renderDash() {
     // 카드수수료
     const cardFee = (c.contractPayment||'현금')==='카드' ? Math.round(amountWon*0.004) : 0;
     // JJK 쉐어
-    const jjkRatio = c.source==='JJK' ? (parseInt(c.mouratio)||0) : 0;
+    const jjkRatio = (c.source==='JJK'||c.source==='MOU - JJK'||c.source==='MOU-JJK') ? (parseInt(c.mouratio)||0) : 0;
     const jjkAmt = jjkRatio>0 ? Math.round(amountWon*(jjkRatio/100)) : 0;
     // 소개 쉐어 (계약금만 or 둘다일 때만)
     const isIntro = c.source==='소개' && (parseFloat(c.introRatio)||0)>0;
@@ -867,7 +867,7 @@ function renderDashCharts() {
         rev6[5-diff] += Number(c.contractfee)||0;
         if(c.source==='광고') con6[5-diff].ad++;
         else if(c.source==='소개') con6[5-diff].intro++;
-        else if(c.source==='JJK') con6[5-diff].mou++;
+        else if(c.source==='JJK'||c.source==='MOU - JJK'||c.source==='MOU-JJK') con6[5-diff].mou++;
       }
     }
     (c.actualFunds||[]).forEach(f => {
@@ -1106,7 +1106,7 @@ function renderClients(){
     const ddT=dd===null?'—':(dd<=0?'만료':`D-${dd}`);
     const tf=(c.actualFunds||[]).reduce((s,f)=>s+(Number(f.amount)||0),0);
     const fc=(c.actualFunds||[]).length;
-    const src=c.source==='광고'?'🔵 광고':c.source==='소개'?'🟢 소개':c.source==='JJK'?'🟠 JJK':'—';
+    const src=c.source==='광고'?'🔵 광고':c.source==='소개'?'🟢 소개':(c.source==='JJK'||c.source==='MOU - JJK'||c.source==='MOU-JJK')?'🟠 JJK':'—';
     const isT=c.status==='계약해지';
     return `<tr>
       <td><strong style="cursor:pointer;color:var(--ac);" onclick="openClientModal('${c.id}')">${c.name}</strong></td>
@@ -1410,7 +1410,7 @@ function openClientModal(id){ if(isGuest){alert('게스트 모드에서는 사�
     set('c-intro-taxtype',c.introTaxtype||'3.3');
     set('c-intro-scope',c.introScope||'계약금만');
     calcIntroShare();
-  } else if(c.source==='JJK'){
+  } else if(c.source==='JJK'||c.source==='MOU - JJK'||c.source==='MOU-JJK'){
     introWrap.style.display='none';
     jjkScopeWrap.style.display='block';
   } else {
@@ -1475,7 +1475,7 @@ function syncClientToLedger(c){
   const introRatio=isIntro?(parseFloat(c.introRatio)||0):0;
   const introTaxtype=c.introTaxtype||'3.3';
   const introScope=c.introScope||'계약금만'; // '계약금만' | '수수료만' | '둘다'
-  const isJJK=c.source==='JJK';
+  const isJJK=(c.source==='JJK'||c.source==='MOU - JJK'||c.source==='MOU-JJK');
   const jjkRatio=isJJK?(parseInt(c.mouratio)||0):0;
 
   function calcIntroAmts(baseAmt){
