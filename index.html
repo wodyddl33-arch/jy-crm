@@ -2044,6 +2044,10 @@ async function importXlsx(input){
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+<style>
+#page-landing .tbl th, #page-landing .tbl td { padding:6px 8px; }
+#page-landing .tbl textarea { width:100%; box-sizing:border-box; }
+</style>
 <!-- 랜딩접수 페이지 -->
 <div id="page-landing" class="page">
   <div class="filter-bar">
@@ -2062,18 +2066,18 @@ async function importXlsx(input){
     <button class="btn btn-g" onclick="downloadLandingExcel()">📥 엑셀 다운로드</button>
   </div>
   <div class="tbl-wrap">
-    <table class="tbl">
+    <table class="tbl" style="table-layout:fixed;width:100%">
       <thead>
         <tr>
-          <th>접수일시</th>
-          <th>이름</th>
-          <th>연락처</th>
-          <th>매출</th>
-          <th>지역</th>
-          <th>업종</th>
-          <th>상태</th>
+          <th style="width:80px">접수일시</th>
+          <th style="width:70px">이름</th>
+          <th style="width:100px">연락처</th>
+          <th style="width:70px">매출</th>
+          <th style="width:100px">지역</th>
+          <th style="width:60px">업종</th>
+          <th style="width:90px">상태</th>
           <th>메모</th>
-          <th>삭제</th>
+          <th style="width:50px">삭제</th>
         </tr>
       </thead>
       <tbody id="landing-tbody">
