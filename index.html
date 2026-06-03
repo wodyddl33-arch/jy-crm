@@ -2141,7 +2141,7 @@ function renderLandingTable() {
       <td style="font-size:12px">${r.business_type||'-'}</td>
       <td>${sel}</td>
       <td>
-        <textarea style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--tx);width:200px;min-height:90px;resize:vertical;font-family:inherit"
+        <textarea style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--tx);width:100%;min-height:90px;resize:vertical;font-family:inherit"
           placeholder="메모" onblur="updateLandingMemo('${r.id}',this.value)">${r.memo||''}</textarea>
       </td>
       <td>
