@@ -2195,6 +2195,61 @@ async function updateLandingStatus(id, status) {
     headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY,'Content-Type':'application/json'},
     body:JSON.stringify({status})
   });
+  // 2차심사예정 선택 시 캘린더 등록 모달
+  if(status === '2차심사예정') {
+    const row = landingData.find(r => r.id === id);
+    open2chaDateModal(id, row);
+  }
+}
+
+// 2차심사 날짜 모달 관련
+let _2chaCurrentId = null;
+let _2chaCurrentRow = null;
+
+function open2chaDateModal(id, row) {
+  _2chaCurrentId = id;
+  _2chaCurrentRow = row;
+  // 이름 표시
+  const nameEl = document.getElementById('2cha-name-lbl');
+  if(nameEl) nameEl.textContent = (row && row.company_name) ? row.company_name : '고객';
+  // 날짜 기본값: 오늘
+  const dateInp = document.getElementById('2cha-date-inp');
+  if(dateInp) dateInp.value = getTodayStr();
+  // 메모 초기화
+  const memoInp = document.getElementById('2cha-memo-inp');
+  if(memoInp) memoInp.value = '';
+  // 모달 열기
+  document.getElementById('modal-2cha-date').classList.add('on');
+}
+
+function skip2chaCalendar() {
+  closeModal('modal-2cha-date');
+}
+
+function confirm2chaCalendar() {
+  const dateInp = document.getElementById('2cha-date-inp');
+  const memoInp = document.getElementById('2cha-memo-inp');
+  const dateStr = dateInp ? dateInp.value : getTodayStr();
+  const memo = memoInp ? memoInp.value.trim() : '';
+
+  if(!dateStr) { alert('날짜를 선택해주세요.'); return; }
+
+  // 캘린더 할일 텍스트 구성
+  const row = _2chaCurrentRow;
+  const name = (row && row.company_name) ? row.company_name : '고객';
+  const phone = (row && row.phone) ? ' ' + row.phone : '';
+  const memoSuffix = memo ? ` (${memo})` : '';
+  const todoText = `2차심사 - ${name}${phone}${memoSuffix}`;
+
+  // 캘린더 할일 추가
+  const todos = getCalTodos(dateStr);
+  todos.unshift({ id: 'ct' + Date.now(), text: todoText, tag: '미팅', done: false });
+  setCalTodos(dateStr, todos);
+  renderCal();
+  renderTodayTodoSummary();
+
+  closeModal('modal-2cha-date');
+  alert(`✅ ${dateStr} 캘린더에 등록되었습니다!\n"${todoText}"`);
 }
 
 async function updateLandingMemo(id, memo) {
@@ -2323,6 +2378,34 @@ async function confirmEmptyTrash() {
 
 
 </script>
+
+
+<!-- 2차심사 날짜 선택 모달 -->
+<div class="overlay" id="modal-2cha-date">
+  <div class="modal modal-sm">
+    <div class="modal-hd">
+      <span class="modal-title">📅 2차심사 일정 등록</span>
+      <button class="modal-close" onclick="closeModal('modal-2cha-date')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--tx2);margin-bottom:16px;">
+        <span id="2cha-name-lbl" style="font-weight:700;color:var(--tx)"></span> 님의 2차심사 일정을 캘린더에 등록합니다.
+      </div>
+      <div class="field">
+        <label>심사 날짜</label>
+        <input type="date" id="2cha-date-inp" style="width:100%">
+      </div>
+      <div class="field">
+        <label>메모 (선택)</label>
+        <input type="text" id="2cha-memo-inp" placeholder="예: 오후 2시, 방문심사 등">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="skip2chaCalendar()">캘린더 등록 안함</button>
+      <button class="btn btn-p" onclick="confirm2chaCalendar()">📅 캘린더 등록</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
