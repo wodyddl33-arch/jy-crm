@@ -146,6 +146,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
   <button class="ntab" onclick="goPage('clients',this)">고객 관리 <span class="nbadge" id="nb-cli">0</span></button>
   <button class="ntab" onclick="goPage('revenue',this)">매출 정리</button>
 <button class="ntab" onclick="goPage('landing',this)">랜딩 접수 <span class="nbadge" id="badge-landing">0</span></button>
+<button class="ntab" onclick="goPage('trash',this)">🗑️ 휴지통 <span class="nbadge" id="badge-trash">0</span></button>
 </div>
 
 <div class="main">
@@ -779,6 +780,7 @@ function goPage(id, btn) {
   if(page){ page.classList.add('on'); page.style.display='block'; }
   btn.classList.add('on');
   if(id === 'landing') fetchLandingData();
+  if(id === 'trash') fetchTrashData();
 }
 function goSubPage(id, btn) {
   document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('on'));
@@ -2085,6 +2087,37 @@ async function importXlsx(input){
       </tbody>
     </table>
   </div>
+<!-- 휴지통 페이지 -->
+<div id="page-trash" class="page" style="display:none">
+  <div class="filter-bar">
+    <span style="font-size:13px;font-weight:700;color:var(--tx)">🗑️ 휴지통</span>
+    <span style="font-size:12px;color:var(--tx3)">삭제된 접수 건을 복구하거나 완전히 삭제할 수 있습니다</span>
+    <button class="btn btn-p" onclick="fetchTrashData()">🔄 새로고침</button>
+    <button class="btn btn-r" onclick="confirmEmptyTrash()" style="margin-left:auto">🗑️ 전체 완전삭제</button>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl" style="table-layout:fixed;width:100%">
+      <thead>
+        <tr>
+          <th style="width:80px">접수일시</th>
+          <th style="width:70px">이름</th>
+          <th style="width:100px">연락처</th>
+          <th style="width:70px">매출</th>
+          <th style="width:100px">지역</th>
+          <th style="width:60px">업종</th>
+          <th style="width:90px">삭제 전 상태</th>
+          <th>메모</th>
+          <th style="width:65px">복구</th>
+          <th style="width:65px">완전삭제</th>
+        </tr>
+      </thead>
+      <tbody id="trash-tbody">
+        <tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:40px">휴지통이 비어있습니다 🎉</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -2094,7 +2127,7 @@ let landingData = [];
 
 async function fetchLandingData() {
   try {
-    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?order=created_at.desc', {
+    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?order=created_at.desc&is_deleted=eq.false', {
       headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
     });
     landingData = await res.json();
@@ -2107,13 +2140,14 @@ async function fetchLandingData() {
 // 페이지 로드시 배지 자동 카운트
 (async function initLandingBadge() {
   try {
-    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?select=id', {
+    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?select=id&is_deleted=eq.false', {
       headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
     });
     const data = await res.json();
     const badge = document.getElementById('badge-landing');
     if(badge && Array.isArray(data)) badge.textContent = data.length;
   } catch(e) {}
+  fetchTrashBadge();
 })();
 
 function renderLandingTable() {
@@ -2172,12 +2206,14 @@ async function updateLandingMemo(id, memo) {
 }
 
 async function deleteLandingRow(id) {
-  if(!confirm('이 접수 건을 삭제하시겠습니까?')) return;
+  if(!confirm('이 접수 건을 휴지통으로 이동하시겠습니까?\n(휴지통에서 복구할 수 있습니다)')) return;
   await fetch(LANDING_URL+'/rest/v1/landing_inquiries?id=eq.'+id, {
-    method:'DELETE',
-    headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY}
+    method:'PATCH',
+    headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({is_deleted:true})
   });
   await fetchLandingData();
+  fetchTrashBadge();
 }
 
 function downloadLandingExcel() {
@@ -2195,6 +2231,97 @@ function downloadLandingExcel() {
   a.download = `랜딩접수_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
+// ======= 휴지통 기능 =======
+let trashData = [];
+
+async function fetchTrashData() {
+  try {
+    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?order=created_at.desc&is_deleted=eq.true', {
+      headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
+    });
+    trashData = await res.json();
+    renderTrashTable();
+    const badge = document.getElementById('badge-trash');
+    if(badge) badge.textContent = trashData.length || '';
+  } catch(e) { console.error('휴지통 데이터 로드 실패', e); }
+}
+
+async function fetchTrashBadge() {
+  try {
+    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?select=id&is_deleted=eq.true', {
+      headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
+    });
+    const data = await res.json();
+    const badge = document.getElementById('badge-trash');
+    if(badge) badge.textContent = (Array.isArray(data) && data.length) ? data.length : '';
+  } catch(e) {}
+}
+
+function renderTrashTable() {
+  const tbody = document.getElementById('trash-tbody');
+  if(!tbody) return;
+  if(!trashData.length) {
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:40px">휴지통이 비어있습니다 🎉</td></tr>';
+    return;
+  }
+  tbody.innerHTML = trashData.map(r => {
+    const dt = new Date(r.created_at);
+    const ds = `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    return `<tr>
+      <td style="font-size:11px;color:var(--tx2);white-space:nowrap">${ds}</td>
+      <td style="font-weight:600;white-space:nowrap">${r.company_name||'-'}</td>
+      <td style="font-family:monospace;font-size:12px;white-space:nowrap">${r.phone||'-'}</td>
+      <td style="font-size:12px">${r.revenue||'-'}</td>
+      <td style="font-size:11px">${r.region||'-'}</td>
+      <td style="font-size:12px">${r.business_type||'-'}</td>
+      <td><span class="badge b-계약해지">${r.status||'-'}</span></td>
+      <td style="font-size:12px;color:var(--tx2)">${r.memo||'-'}</td>
+      <td><button class="btn btn-sm btn-g" onclick="restoreLandingRow('${r.id}')">↩️ 복구</button></td>
+      <td><button class="btn btn-sm btn-r" onclick="hardDeleteLandingRow('${r.id}')">🗑️ 삭제</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function restoreLandingRow(id) {
+  if(!confirm('이 접수 건을 복구하시겠습니까?')) return;
+  await fetch(LANDING_URL+'/rest/v1/landing_inquiries?id=eq.'+id, {
+    method:'PATCH',
+    headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({is_deleted:false})
+  });
+  await fetchTrashData();
+  fetchTrashBadge();
+  // 랜딩 배지도 갱신
+  const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?select=id&is_deleted=eq.false', {
+    headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
+  });
+  const data = await res.json();
+  const badge = document.getElementById('badge-landing');
+  if(badge && Array.isArray(data)) badge.textContent = data.length;
+}
+
+async function hardDeleteLandingRow(id) {
+  if(!confirm('완전히 삭제합니다.\n이 작업은 되돌릴 수 없습니다!')) return;
+  await fetch(LANDING_URL+'/rest/v1/landing_inquiries?id=eq.'+id, {
+    method:'DELETE',
+    headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY}
+  });
+  await fetchTrashData();
+}
+
+async function confirmEmptyTrash() {
+  if(!trashData.length){ alert('휴지통이 비어있습니다.'); return; }
+  if(!confirm(`휴지통의 ${trashData.length}건을 모두 완전 삭제합니다.\n이 작업은 되돌릴 수 없습니다!`)) return;
+  await Promise.all(trashData.map(r =>
+    fetch(LANDING_URL+'/rest/v1/landing_inquiries?id=eq.'+r.id, {
+      method:'DELETE',
+      headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY}
+    })
+  ));
+  await fetchTrashData();
+}
+
+
 </script>
 
 </body>
