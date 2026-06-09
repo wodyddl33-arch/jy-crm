@@ -866,10 +866,7 @@ function goPage(id, btn) {
   btn.classList.add('on');
   if(id === 'landing') fetchLandingData();
   if(id === 'trash') fetchTrashData();
-  if(id === 'adstats'){ 
-    if(!landingData.length) fetchLandingData().then(()=>renderAdStats()); 
-    else renderAdStats(); 
-  }
+  if(id === 'adstats') fetchLandingData();
 }
 function goSubPage(id, btn) {
   document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('on'));
@@ -2268,6 +2265,8 @@ async function fetchLandingData() {
     renderLandingTable();
     const badge = document.getElementById('badge-landing');
     if(badge) badge.textContent = landingData.length;
+    // 광고 성과 탭이 열려있으면 DB수 재계산
+    if(document.getElementById('page-adstats')?.classList.contains('on')) renderAdStats();
   } catch(e) { console.error('랜딩 데이터 로드 실패', e); }
 }
 
