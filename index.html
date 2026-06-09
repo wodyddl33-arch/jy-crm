@@ -2133,15 +2133,6 @@ async function importXlsx(input){
 #page-landing .tbl textarea { width:100%; box-sizing:border-box; }
 </style>
 <!-- 랜딩접수 페이지 -->
-
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-<style>
-#page-landing .tbl th, #page-landing .tbl td { padding:6px 8px; }
-#page-landing .tbl textarea { width:100%; box-sizing:border-box; }
-</style>
-<!-- 랜딩접수 페이지 -->
 <div id="page-trash" class="page">
   <div class="filter-bar">
     <span style="font-size:13px;font-weight:700;color:var(--tx)">🗑️ 휴지통</span>
@@ -2220,16 +2211,18 @@ function renderLandingTable() {
   const opts = ['신규','부재','1차심사완료','2차심사예정','검토중','불량'];
   tbody.innerHTML = filtered.map(r => {
     const dt = new Date(r.created_at);
-    const ds = `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const ds = `${dt.getMonth()+1}/${dt.getDate()}<br><span style="color:var(--tx3);font-size:10px">${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}</span>`;
+    const rawPhone = r.phone||'';
+    const fmtPhone = rawPhone.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3').replace(/^(\d{3})-?(\d{3,4})-?(\d{4})$/, '$1-$2-$3');
     const sel = `<select class="sort-sel" style="font-size:11px;padding:3px 4px" onchange="updateLandingStatus('${r.id}',this.value)">
       ${opts.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select>`;
-    return `<tr>
-      <td style="font-size:11px;color:var(--tx2);white-space:nowrap">${ds}</td>
-      <td style="font-weight:600;white-space:nowrap">${r.company_name||'-'}</td>
-      <td style="font-family:monospace;font-size:12px;white-space:nowrap">${r.phone||'-'}</td>
-      <td style="font-size:12px">${r.revenue||'-'}</td>
-      <td style="font-size:11px">${r.region||'-'}</td>
-      <td style="font-size:12px">${r.business_type||'-'}</td>
+    return `<tr style="line-height:1.8">
+      <td style="font-size:11px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
+      <td style="font-weight:700;white-space:nowrap;font-size:13px">${r.company_name||'-'}</td>
+      <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--ac)">${fmtPhone||'-'}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.revenue||'-'}</td>
+      <td style="font-size:11px;color:var(--tx2)">${r.region||'-'}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.business_type||'-'}</td>
       <td>${sel}</td>
       <td>
         <textarea style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--tx);width:100%;min-height:90px;resize:vertical;font-family:inherit"
@@ -2374,14 +2367,16 @@ function renderTrashTable() {
   }
   tbody.innerHTML = trashData.map(r => {
     const dt = new Date(r.created_at);
-    const ds = `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;
-    return `<tr>
-      <td style="font-size:11px;color:var(--tx2);white-space:nowrap">${ds}</td>
-      <td style="font-weight:600;white-space:nowrap">${r.company_name||'-'}</td>
-      <td style="font-family:monospace;font-size:12px;white-space:nowrap">${r.phone||'-'}</td>
-      <td style="font-size:12px">${r.revenue||'-'}</td>
-      <td style="font-size:11px">${r.region||'-'}</td>
-      <td style="font-size:12px">${r.business_type||'-'}</td>
+    const ds = `${dt.getMonth()+1}/${dt.getDate()}<br><span style="color:var(--tx3);font-size:10px">${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}</span>`;
+    const rawPhone = r.phone||'';
+    const fmtPhone = rawPhone.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3').replace(/^(\d{3})-?(\d{3,4})-?(\d{4})$/, '$1-$2-$3');
+    return `<tr style="line-height:1.8">
+      <td style="font-size:11px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
+      <td style="font-weight:700;white-space:nowrap;font-size:13px">${r.company_name||'-'}</td>
+      <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--ac)">${fmtPhone||'-'}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.revenue||'-'}</td>
+      <td style="font-size:11px;color:var(--tx2)">${r.region||'-'}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.business_type||'-'}</td>
       <td><span class="badge b-계약해지">${r.status||'-'}</span></td>
       <td style="font-size:12px;color:var(--tx2)">${r.memo||'-'}</td>
       <td><button class="btn btn-sm btn-g" onclick="restoreLandingRow('${r.id}')">↩️ 복구</button></td>
