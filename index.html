@@ -322,13 +322,13 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     <table class="tbl" style="table-layout:fixed;width:100%">
       <thead>
         <tr>
-          <th style="width:80px">접수일시</th>
-          <th style="width:70px">이름</th>
-          <th style="width:100px">연락처</th>
-          <th style="width:70px">매출</th>
-          <th style="width:100px">지역</th>
-          <th style="width:60px">업종</th>
-          <th style="width:90px">상태</th>
+          <th style="width:75px">접수일시</th>
+          <th style="width:80px">이름</th>
+          <th style="width:130px">연락처</th>
+          <th style="width:90px">매출</th>
+          <th style="width:140px">지역</th>
+          <th style="width:80px">업종</th>
+          <th style="width:100px">상태</th>
           <th>메모</th>
           <th style="width:50px">삭제</th>
         </tr>
@@ -2306,9 +2306,9 @@ function renderLandingTable() {
       <td style="font-size:11px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
       <td style="font-weight:700;white-space:nowrap;font-size:13px">${r.company_name||'-'}</td>
       <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--tx)">${fmtPhone||'-'}</td>
-      <td style="font-size:12px;color:var(--tx2)">${r.revenue||'-'}</td>
-      <td style="font-size:11px;color:var(--tx2)">${r.region||'-'}</td>
-      <td style="font-size:12px;color:var(--tx2)">${r.business_type||'-'}</td>
+      <td style="font-size:13px;color:var(--tx);white-space:nowrap">${r.revenue||'-'}</td>
+      <td style="font-size:13px;color:var(--tx);white-space:nowrap">${r.region||'-'}</td>
+      <td style="font-size:13px;color:var(--tx);white-space:nowrap">${r.business_type||'-'}</td>
       <td>${sel}</td>
       <td>
         <textarea style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--tx);width:100%;min-height:90px;resize:vertical;font-family:inherit"
@@ -2698,36 +2698,38 @@ function handleAdCsvUpload(e){
 
 function parseAdRows(rows){
   if(!rows.length){ alert('데이터가 없습니다.'); return; }
-  // 헤더 찾기
+  // 헤더 찾기 - 당근 CSV: '기간', '노출 수', '클릭 수', '비용 (VAT 포함)'
   let headerIdx = -1;
   let header = [];
   for(let i=0;i<Math.min(10,rows.length);i++){
-    const r = rows[i].map(c => String(c||'').trim());
-    if(r.some(c => c.includes('날짜') || c.includes('일별') || c.includes('date'))){
+    const r = rows[i].map(c => String(c||'').replace(/^"|"$/g,'').trim());
+    if(r.some(c => c === '기간' || c.includes('날짜') || c.includes('일별') || c.toLowerCase().includes('date'))){
       headerIdx = i; header = r; break;
     }
   }
   if(headerIdx < 0){ alert('날짜 컬럼을 찾을 수 없습니다.\n당근 엑셀 파일인지 확인해주세요.'); return; }
 
   const col = name => header.findIndex(h => h.includes(name));
-  const dateCol = col('날짜') >= 0 ? col('날짜') : col('일별') >= 0 ? col('일별') : 0;
-  const imprCol = col('노출');
-  const clickCol = col('클릭');
-  const spendCol = col('광고비') >= 0 ? col('광고비') : col('비용');
-  const cvCol = col('전환');
+  // 당근 실제 컬럼명 대응
+  const dateCol = col('기간') >= 0 ? col('기간') : col('날짜') >= 0 ? col('날짜') : col('일별') >= 0 ? col('일별') : 0;
+  const imprCol = col('노출 수') >= 0 ? col('노출 수') : col('노출');
+  const clickCol = col('클릭 수') >= 0 ? col('클릭 수') : col('클릭');
+  const spendCol = col('비용 (VAT 포함)') >= 0 ? col('비용 (VAT 포함)') : col('광고비') >= 0 ? col('광고비') : col('비용');
+  const cvCol = col('전환수') >= 0 ? col('전환수') : col('전환');
 
   let added = 0;
   for(let i=headerIdx+1;i<rows.length;i++){
-    const r = rows[i];
-    if(!r[dateCol]) continue;
-    const raw = String(r[dateCol]).trim().replace(/\./g,'-');
+    const r = rows[i].map(c => String(c||'').replace(/^"|"$/g,'').trim());
+    if(!r[dateCol] || !r[dateCol].trim()) continue;
+    // 날짜 파싱: '2026.06.08.' 또는 '2026-06-08' 등 모두 대응
+    const raw = r[dateCol].trim().replace(/\.+$/,'').replace(/\./g,'-');
     const dateMatch = raw.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
     if(!dateMatch) continue;
     const date = `${dateMatch[1]}-${String(dateMatch[2]).padStart(2,'0')}-${String(dateMatch[3]).padStart(2,'0')}`;
     const impressions = parseInt(String(r[imprCol]||0).replace(/,/g,''))||0;
     const clicks = parseInt(String(r[clickCol]||0).replace(/,/g,''))||0;
     const spend = parseInt(String(r[spendCol]||0).replace(/,/g,''))||0;
-    const db = cvCol >= 0 ? (parseInt(String(r[cvCol]||'').replace(/,/g,''))||null) : null;
+    const db = cvCol >= 0 && r[cvCol] ? (parseInt(String(r[cvCol]).replace(/,/g,''))||null) : null;
     if(!impressions && !clicks && !spend) continue;
     const idx = adData.findIndex(d => d.date === date && d.media === '당근');
     const row = { date, media:'당근', impressions, clicks, spend, db, memo:'' };
