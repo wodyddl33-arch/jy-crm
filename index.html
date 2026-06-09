@@ -579,7 +579,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
         </div>
       </div>
       <div class="row2">
-        <div class="field"><label>수수료율</label><select id="c-feerate"><option value="">미정</option><option value="3.3">3%</option><option value="4.4">4%</option><option value="5.5">5%</option></select></div>
+        <div class="field"><label>수수료율 (%)</label><input type="number" id="c-feerate" placeholder="예: 3.3" step="0.1" min="0" max="100"></div>
         <div class="field"><label>MOU 쉐어비율 (%)</label><input type="number" id="c-mouratio"></div>
       </div>
       <div id="c-jjk-scope-wrap" style="display:none;background:var(--pub);border:1px solid var(--pubd);border-radius:8px;padding:8px 12px;margin-bottom:13px;font-size:11px;color:var(--pu);">
@@ -1322,10 +1322,7 @@ function addAF(data){
   div.innerHTML=`
     <input class="af-inp af-name" type="text" value="${data.name||''}" placeholder="자금명">
     <input class="af-inp af-amount" type="number" value="${data.amount||''}" placeholder="금액" oninput="calcAF(this)">
-    <select class="af-inp af-feerate" onchange="calcAF(this.closest('.af-row').querySelector('.af-amount'))">
-      <option value="">수수료율</option>
-      ${[['3.3','3.3%'],['4.4','4.4%'],['5.5','5.5%']].map(([v,l])=>`<option value="${v}" ${String(data.feeRate)===v?'selected':''}>${l}</option>`).join('')}
-    </select>
+    <input class="af-inp af-feerate" type="number" value="${data.feeRate||''}" placeholder="요율%" step="0.1" min="0" max="100" oninput="calcAF(this.closest('.af-row').querySelector('.af-amount'))">
     <input class="af-inp af-feeamt" type="number" value="${data.feeAmt||''}" placeholder="수수료" style="background:var(--gnb);color:var(--gn);" readonly>
     <input class="af-inp af-date" type="date" value="${data.date||''}">
     <select class="af-inp af-payment"><option value="현금">현금</option><option value="카드">카드</option></select>
