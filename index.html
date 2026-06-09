@@ -147,6 +147,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
   <button class="ntab" onclick="goPage('revenue',this)">매출 정리</button>
 <button class="ntab" onclick="goPage('landing',this)">랜딩 접수 <span class="nbadge" id="badge-landing">0</span></button>
 <button class="ntab" onclick="goPage('trash',this)">🗑️ 휴지통 <span class="nbadge" id="badge-trash">0</span></button>
+<button class="ntab" onclick="goPage('adstats',this)">📊 광고 성과</button>
 </div>
 
 <div class="main">
@@ -2163,6 +2164,91 @@ async function importXlsx(input){
   </div>
 </div>
 
+<!-- 광고 성과 페이지 -->
+<div id="page-adstats" class="page">
+  <div class="filter-bar" style="margin-bottom:16px">
+    <span style="font-size:13px;font-weight:700;color:var(--tx)">📊 광고 성과</span>
+    <select class="sort-sel" id="ad-media-filter" onchange="renderAdStats()">
+      <option value="">전체 매체</option>
+      <option value="당근">당근</option>
+      <option value="메타">메타</option>
+      <option value="기타">기타</option>
+    </select>
+    <select class="sort-sel" id="ad-period-filter" onchange="renderAdStats()">
+      <option value="">전체 기간</option>
+      <option value="1">최근 1개월</option>
+      <option value="3">최근 3개월</option>
+    </select>
+    <button class="btn btn-p" onclick="openAdInputModal()">+ 수동 입력</button>
+    <label class="btn btn-g" style="cursor:pointer">📂 CSV 업로드<input type="file" accept=".csv,.xlsx" style="display:none" onchange="handleAdCsvUpload(event)"></label>
+    <button class="btn btn-r" style="margin-left:auto" onclick="if(confirm('전체 광고 데이터를 삭제하시겠습니까?')){adData=[];saveAdData();renderAdStats();}">초기화</button>
+  </div>
+  <div class="stats stats-6" style="margin-bottom:20px">
+    <div class="stat c-ac"><div class="stat-lbl">총 광고비</div><div class="stat-val" id="ad-s-spend">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-gn"><div class="stat-lbl">총 DB수</div><div class="stat-val" id="ad-s-db">0<span class="stat-unit">건</span></div></div>
+    <div class="stat c-am"><div class="stat-lbl">DB당 단가</div><div class="stat-val" id="ad-s-cpa">-<span class="stat-unit">원</span></div></div>
+    <div class="stat c-pu"><div class="stat-lbl">총 클릭</div><div class="stat-val" id="ad-s-clicks">0<span class="stat-unit">회</span></div></div>
+    <div class="stat c-rs"><div class="stat-lbl">평균 CPC</div><div class="stat-val" id="ad-s-cpc">-<span class="stat-unit">원</span></div></div>
+    <div class="stat c-gn"><div class="stat-lbl">평균 CTR</div><div class="stat-val" id="ad-s-ctr">-<span class="stat-unit">%</span></div></div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>매체</th>
+          <th>노출수</th>
+          <th>클릭수</th>
+          <th>CTR</th>
+          <th>CPC</th>
+          <th>광고비</th>
+          <th style="color:var(--gn)">DB수</th>
+          <th style="color:var(--gn)">DB단가</th>
+          <th>메모</th>
+          <th style="width:50px"></th>
+        </tr>
+      </thead>
+      <tbody id="ad-tbody">
+        <tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다. 수동 입력 또는 CSV 업로드를 해주세요.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 광고 수동 입력 모달 -->
+<div class="overlay" id="adInputModal">
+  <div class="modal modal-sm">
+    <div class="modal-hd">
+      <span class="modal-title">광고 데이터 입력</span>
+      <button class="modal-close" onclick="closeAdInputModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row2">
+        <div class="field"><label>날짜</label><input type="date" id="ad-inp-date"></div>
+        <div class="field"><label>매체</label>
+          <select id="ad-inp-media">
+            <option value="당근">당근</option>
+            <option value="메타">메타</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>노출수</label><input type="number" id="ad-inp-impressions" placeholder="0"></div>
+        <div class="field"><label>클릭수</label><input type="number" id="ad-inp-clicks" placeholder="0"></div>
+        <div class="field"><label>광고비 (원)</label><input type="number" id="ad-inp-spend" placeholder="0"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>DB수 <span style="color:var(--tx3);font-size:10px">(비워두면 랜딩 자동계산)</span></label><input type="number" id="ad-inp-db" placeholder="자동"></div>
+        <div class="field"><label>메모</label><input type="text" id="ad-inp-memo" placeholder="예: 타겟 수정, 소재 변경 등"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeAdInputModal()">취소</button>
+      <button class="btn btn-p" onclick="saveAdInput()">저장</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const LANDING_URL = 'https://lxascfdyqxywzvwmldhs.supabase.co';
@@ -2219,7 +2305,7 @@ function renderLandingTable() {
     return `<tr style="line-height:1.8">
       <td style="font-size:11px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
       <td style="font-weight:700;white-space:nowrap;font-size:13px">${r.company_name||'-'}</td>
-      <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--ac)">${fmtPhone||'-'}</td>
+      <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--tx)">${fmtPhone||'-'}</td>
       <td style="font-size:12px;color:var(--tx2)">${r.revenue||'-'}</td>
       <td style="font-size:11px;color:var(--tx2)">${r.region||'-'}</td>
       <td style="font-size:12px;color:var(--tx2)">${r.business_type||'-'}</td>
@@ -2373,7 +2459,7 @@ function renderTrashTable() {
     return `<tr style="line-height:1.8">
       <td style="font-size:11px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
       <td style="font-weight:700;white-space:nowrap;font-size:13px">${r.company_name||'-'}</td>
-      <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--ac)">${fmtPhone||'-'}</td>
+      <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--tx)">${fmtPhone||'-'}</td>
       <td style="font-size:12px;color:var(--tx2)">${r.revenue||'-'}</td>
       <td style="font-size:11px;color:var(--tx2)">${r.region||'-'}</td>
       <td style="font-size:12px;color:var(--tx2)">${r.business_type||'-'}</td>
@@ -2454,6 +2540,206 @@ async function confirmEmptyTrash() {
     </div>
   </div>
 </div>
+
+<script>
+// ========== 광고 성과 ==========
+let adData = JSON.parse(localStorage.getItem('jy_addata')||'[]');
+
+function saveAdData(){ localStorage.setItem('jy_addata', JSON.stringify(adData)); }
+
+function openAdInputModal(){
+  document.getElementById('ad-inp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ad-inp-media').value = '당근';
+  document.getElementById('ad-inp-impressions').value = '';
+  document.getElementById('ad-inp-clicks').value = '';
+  document.getElementById('ad-inp-spend').value = '';
+  document.getElementById('ad-inp-db').value = '';
+  document.getElementById('ad-inp-memo').value = '';
+  document.getElementById('adInputModal').classList.add('on');
+}
+function closeAdInputModal(){ document.getElementById('adInputModal').classList.remove('on'); }
+
+function saveAdInput(){
+  const date = document.getElementById('ad-inp-date').value;
+  if(!date){ alert('날짜를 입력해주세요.'); return; }
+  const media = document.getElementById('ad-inp-media').value;
+  const impressions = parseInt(document.getElementById('ad-inp-impressions').value)||0;
+  const clicks = parseInt(document.getElementById('ad-inp-clicks').value)||0;
+  const spend = parseInt(document.getElementById('ad-inp-spend').value)||0;
+  const dbVal = document.getElementById('ad-inp-db').value;
+  const db = dbVal !== '' ? parseInt(dbVal) : null;
+  const memo = document.getElementById('ad-inp-memo').value.trim();
+  // 같은 날짜+매체 있으면 덮어쓰기
+  const idx = adData.findIndex(d => d.date === date && d.media === media);
+  const row = { date, media, impressions, clicks, spend, db, memo };
+  if(idx >= 0) adData[idx] = row; else adData.push(row);
+  adData.sort((a,b) => b.date.localeCompare(a.date));
+  saveAdData();
+  renderAdStats();
+  closeAdInputModal();
+}
+
+function getDbCountByDate(dateStr){
+  // Supabase landingData에서 해당 날짜의 DB수 계산
+  if(!landingData || !landingData.length) return 0;
+  return landingData.filter(r => {
+    const d = new Date(r.created_at);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return ds === dateStr;
+  }).length;
+}
+
+function renderAdStats(){
+  const mediaFilter = document.getElementById('ad-media-filter')?.value || '';
+  const periodFilter = parseInt(document.getElementById('ad-period-filter')?.value || '0');
+  const now = new Date();
+
+  let filtered = adData.filter(d => {
+    if(mediaFilter && d.media !== mediaFilter) return false;
+    if(periodFilter) {
+      const diff = (now - new Date(d.date)) / (1000*60*60*24*30);
+      if(diff > periodFilter) return false;
+    }
+    return true;
+  });
+
+  // DB수: 수동 입력값 없으면 랜딩 자동계산
+  filtered = filtered.map(d => ({
+    ...d,
+    dbCount: d.db !== null ? d.db : getDbCountByDate(d.date)
+  }));
+
+  // 요약 카드
+  const totalSpend = filtered.reduce((s,d) => s+d.spend, 0);
+  const totalClicks = filtered.reduce((s,d) => s+d.clicks, 0);
+  const totalDb = filtered.reduce((s,d) => s+d.dbCount, 0);
+  const totalImpr = filtered.reduce((s,d) => s+d.impressions, 0);
+  const avgCpc = totalClicks ? Math.round(totalSpend/totalClicks) : 0;
+  const avgCtr = totalImpr ? (totalClicks/totalImpr*100).toFixed(2) : '-';
+  const cpa = totalDb ? Math.round(totalSpend/totalDb) : '-';
+
+  document.getElementById('ad-s-spend').innerHTML = `${totalSpend.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('ad-s-db').innerHTML = `${totalDb}<span class="stat-unit">건</span>`;
+  document.getElementById('ad-s-cpa').innerHTML = `${cpa !== '-' ? cpa.toLocaleString() : '-'}<span class="stat-unit">원</span>`;
+  document.getElementById('ad-s-clicks').innerHTML = `${totalClicks.toLocaleString()}<span class="stat-unit">회</span>`;
+  document.getElementById('ad-s-cpc').innerHTML = `${avgCpc ? avgCpc.toLocaleString() : '-'}<span class="stat-unit">원</span>`;
+  document.getElementById('ad-s-ctr').innerHTML = `${avgCtr}<span class="stat-unit">%</span>`;
+
+  // 테이블
+  const tbody = document.getElementById('ad-tbody');
+  if(!tbody) return;
+  if(!filtered.length){
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다. 수동 입력 또는 CSV 업로드를 해주세요.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map((d,i) => {
+    const ctr = d.impressions ? (d.clicks/d.impressions*100).toFixed(2)+'%' : '-';
+    const cpc = d.clicks ? Math.round(d.spend/d.clicks).toLocaleString() : '-';
+    const dbCpa = d.dbCount ? Math.round(d.spend/d.dbCount).toLocaleString() : '-';
+    const memoStyle = d.memo ? 'color:var(--am);font-weight:600' : 'color:var(--tx3)';
+    const mediaBadge = d.media === '당근'
+      ? `<span class="badge" style="background:rgba(255,102,0,0.15);color:#ff6600;border:1px solid rgba(255,102,0,0.3)">당근</span>`
+      : d.media === '메타'
+      ? `<span class="badge" style="background:rgba(24,119,242,0.15);color:#1877f2;border:1px solid rgba(24,119,242,0.3)">메타</span>`
+      : `<span class="badge b-계약만료">${d.media}</span>`;
+    return `<tr>
+      <td style="font-size:12px;white-space:nowrap">${d.date}</td>
+      <td>${mediaBadge}</td>
+      <td style="font-family:monospace;font-size:12px">${d.impressions.toLocaleString()}</td>
+      <td style="font-family:monospace;font-size:12px">${d.clicks.toLocaleString()}</td>
+      <td style="font-family:monospace;font-size:12px">${ctr}</td>
+      <td style="font-family:monospace;font-size:12px">${cpc}</td>
+      <td style="font-family:monospace;font-size:12px">${d.spend.toLocaleString()}</td>
+      <td style="font-family:monospace;font-size:12px;color:var(--gn);font-weight:700">${d.dbCount}</td>
+      <td style="font-family:monospace;font-size:12px;color:var(--gn)">${dbCpa}</td>
+      <td style="${memoStyle};font-size:12px">${d.memo||'-'}</td>
+      <td><button class="btn btn-sm btn-r" onclick="deleteAdRow(${i})">삭제</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteAdRow(idx){
+  const mediaFilter = document.getElementById('ad-media-filter')?.value || '';
+  const periodFilter = parseInt(document.getElementById('ad-period-filter')?.value || '0');
+  const now = new Date();
+  let fi = -1, count = 0;
+  adData.forEach((d,i) => {
+    let show = true;
+    if(mediaFilter && d.media !== mediaFilter) show = false;
+    if(periodFilter){ const diff=(now-new Date(d.date))/(1000*60*60*24*30); if(diff>periodFilter) show=false; }
+    if(show){ if(count===idx) fi=i; count++; }
+  });
+  if(fi>=0){ adData.splice(fi,1); saveAdData(); renderAdStats(); }
+}
+
+function handleAdCsvUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext === 'xlsx' || ext === 'xls'){
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+      parseAdRows(rows);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const lines = ev.target.result.split('\n').map(l => l.split(','));
+      parseAdRows(lines);
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+  e.target.value = '';
+}
+
+function parseAdRows(rows){
+  if(!rows.length){ alert('데이터가 없습니다.'); return; }
+  // 헤더 찾기
+  let headerIdx = -1;
+  let header = [];
+  for(let i=0;i<Math.min(10,rows.length);i++){
+    const r = rows[i].map(c => String(c||'').trim());
+    if(r.some(c => c.includes('날짜') || c.includes('일별') || c.includes('date'))){
+      headerIdx = i; header = r; break;
+    }
+  }
+  if(headerIdx < 0){ alert('날짜 컬럼을 찾을 수 없습니다.\n당근 엑셀 파일인지 확인해주세요.'); return; }
+
+  const col = name => header.findIndex(h => h.includes(name));
+  const dateCol = col('날짜') >= 0 ? col('날짜') : col('일별') >= 0 ? col('일별') : 0;
+  const imprCol = col('노출');
+  const clickCol = col('클릭');
+  const spendCol = col('광고비') >= 0 ? col('광고비') : col('비용');
+  const cvCol = col('전환');
+
+  let added = 0;
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const r = rows[i];
+    if(!r[dateCol]) continue;
+    const raw = String(r[dateCol]).trim().replace(/\./g,'-');
+    const dateMatch = raw.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(!dateMatch) continue;
+    const date = `${dateMatch[1]}-${String(dateMatch[2]).padStart(2,'0')}-${String(dateMatch[3]).padStart(2,'0')}`;
+    const impressions = parseInt(String(r[imprCol]||0).replace(/,/g,''))||0;
+    const clicks = parseInt(String(r[clickCol]||0).replace(/,/g,''))||0;
+    const spend = parseInt(String(r[spendCol]||0).replace(/,/g,''))||0;
+    const db = cvCol >= 0 ? (parseInt(String(r[cvCol]||'').replace(/,/g,''))||null) : null;
+    if(!impressions && !clicks && !spend) continue;
+    const idx = adData.findIndex(d => d.date === date && d.media === '당근');
+    const row = { date, media:'당근', impressions, clicks, spend, db, memo:'' };
+    if(idx >= 0) adData[idx] = row; else adData.push(row);
+    added++;
+  }
+  adData.sort((a,b) => b.date.localeCompare(a.date));
+  saveAdData();
+  renderAdStats();
+  alert(`${added}건 업로드 완료!`);
+}
+</script>
 
 </body>
 </html>
