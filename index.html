@@ -146,9 +146,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
   <button class="ntab" onclick="goPage('clients',this)">고객 관리 <span class="nbadge" id="nb-cli">0</span></button>
   <button class="ntab" onclick="goPage('revenue',this)">매출 정리</button>
 <button class="ntab" onclick="goPage('landing',this)">랜딩 접수 <span class="nbadge" id="badge-landing">0</span></button>
-<button class="ntab" onclick="goPage('trash',this)">🗑️ 휴지통 <span class="nbadge" id="badge-trash">0</span></button>
+<button class="ntab" onclick="goPage('trash',this)">🗑️ 접수DB휴지통 <span class="nbadge" id="badge-trash">0</span></button>
 <button class="ntab" onclick="goPage('adstats',this)">📊 광고 성과</button>
-<button class="ntab" id="tab-carincome" onclick="goPage('carincome',this)">🚗 자동차 수입</button>
+<button class="ntab" id="tab-carincome" onclick="goPage('carincome',this)">💰 자금외수입</button>
+<button class="ntab" id="tab-totalview" onclick="goPage('totalview',this)">📈 통합현황</button>
 </div>
 
 <div class="main">
@@ -837,6 +838,8 @@ function applyGuestMode(){
   // 자동차 수입 탭 숨김 (어드민 전용)
   const tabCar = document.getElementById('tab-carincome');
   if(tabCar) tabCar.style.display='none';
+  const tabTotal = document.getElementById('tab-totalview');
+  if(tabTotal) tabTotal.style.display='none';
 }
 
 window.addEventListener('load', async () => {
@@ -872,6 +875,7 @@ function goPage(id, btn) {
   if(id === 'trash') fetchTrashData();
   if(id === 'adstats') fetchAllLandingForAd();
   if(id === 'carincome') fetchCarIncome();
+  if(id === 'totalview'){ fetchCarIncome(); renderTotalView(); }
 }
 function goSubPage(id, btn) {
   document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('on'));
@@ -2172,8 +2176,9 @@ async function importXlsx(input){
 
 <!-- 자동차 수입 페이지 (어드민 전용) -->
 <div id="page-carincome" class="page">
+  <!-- 수입 섹션 -->
   <div class="filter-bar" style="margin-bottom:16px">
-    <span style="font-size:13px;font-weight:700;color:var(--tx)">🚗 자동차 수입 관리</span>
+    <span style="font-size:13px;font-weight:700;color:var(--tx)">💰 자금외수입 관리</span>
     <select class="sort-sel" id="car-period-filter" onchange="renderCarIncome()">
       <option value="">전체 기간</option>
       <option value="3">최근 3개월</option>
@@ -2181,53 +2186,81 @@ async function importXlsx(input){
       <option value="12">올해</option>
     </select>
     <button class="btn btn-p" onclick="openCarModal()">+ 수입 등록</button>
+    <button class="btn btn-g" onclick="openExpenseModal()">+ 지출 등록</button>
     <button class="btn" onclick="fetchCarIncome()">🔄 새로고침</button>
   </div>
 
   <!-- 요약 카드 -->
-  <div class="stats stats-4" style="margin-bottom:20px">
+  <div class="stats stats-6" style="margin-bottom:20px">
     <div class="stat c-ac"><div class="stat-lbl">총 수입</div><div class="stat-val" id="car-s-total">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-gn"><div class="stat-lbl">공급가액 합계</div><div class="stat-val" id="car-s-supply">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-am"><div class="stat-lbl">부가세 합계</div><div class="stat-val" id="car-s-vat">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-rs"><div class="stat-lbl">총 지출</div><div class="stat-val" id="car-s-expense">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-gn"><div class="stat-lbl">순수익</div><div class="stat-val" id="car-s-net">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-gn"><div class="stat-lbl">공급가액</div><div class="stat-val" id="car-s-supply">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-am"><div class="stat-lbl">부가세</div><div class="stat-val" id="car-s-vat">0<span class="stat-unit">원</span></div></div>
     <div class="stat c-pu"><div class="stat-lbl">계산서 발행</div><div class="stat-val" id="car-s-invoice">0<span class="stat-unit">건</span></div></div>
   </div>
 
-  <!-- 테이블 -->
-  <div class="tbl-wrap">
+  <!-- 수입 테이블 -->
+  <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px;padding-left:4px">▶ 수입 내역</div>
+  <div class="tbl-wrap" style="margin-bottom:20px">
     <table class="tbl">
       <thead>
         <tr>
           <th style="width:90px">날짜</th>
-          <th style="width:130px">차량명</th>
-          <th style="width:100px">출고일</th>
+          <th style="width:90px">수입구분</th>
+          <th style="width:150px">품목명</th>
+          <th style="width:100px">출고/완료일</th>
           <th style="width:110px">수입금액</th>
           <th style="width:110px">공급가액</th>
           <th style="width:90px">부가세</th>
           <th style="width:80px">계산서</th>
           <th>메모</th>
-          <th style="width:60px"></th>
+          <th style="width:80px"></th>
         </tr>
       </thead>
       <tbody id="car-tbody">
-        <tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>
+        <tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 지출 테이블 -->
+  <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px;padding-left:4px">▶ 지출 내역</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:90px">날짜</th>
+          <th style="width:90px">지출구분</th>
+          <th style="width:200px">내용</th>
+          <th style="width:120px">지출금액</th>
+          <th>메모</th>
+          <th style="width:60px"></th>
+        </tr>
+      </thead>
+      <tbody id="expense-tbody">
+        <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- 자동차 수입 등록 모달 -->
+<!-- 자금외수입 등록 모달 -->
 <div class="overlay" id="carModal">
   <div class="modal modal-sm">
     <div class="modal-hd">
-      <span class="modal-title" id="car-modal-title">🚗 수입 등록</span>
+      <span class="modal-title" id="car-modal-title">💰 수입 등록</span>
       <button class="modal-close" onclick="closeCarModal()">×</button>
     </div>
     <div class="modal-body">
       <div class="row2">
         <div class="field"><label>날짜</label><input type="date" id="car-inp-date"></div>
-        <div class="field"><label>출고일</label><input type="date" id="car-inp-delivery"></div>
+        <div class="field"><label>출고/완료일</label><input type="date" id="car-inp-delivery"></div>
       </div>
-      <div class="field"><label>차량명</label><input type="text" id="car-inp-name" placeholder="예: 아반떼 CN7 2024"></div>
+      <div class="row2">
+        <div class="field"><label>수입구분</label><input type="text" id="car-inp-category" placeholder="예: 자동차, 보험, 기타"></div>
+        <div class="field"><label>품목명</label><input type="text" id="car-inp-name" placeholder="예: 아반떼 CN7, 실손보험 등"></div>
+      </div>
       <div class="row2">
         <div class="field">
           <label>수입금액 (원)</label>
@@ -2240,7 +2273,6 @@ async function importXlsx(input){
           </label>
         </div>
       </div>
-      <!-- 부가세 미리보기 -->
       <div id="car-vat-preview" style="display:none;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:4px">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px">
           <span style="color:var(--tx2)">공급가액</span>
@@ -2257,6 +2289,73 @@ async function importXlsx(input){
       <button class="btn" onclick="closeCarModal()">취소</button>
       <button class="btn btn-p" onclick="saveCarIncome()">저장</button>
     </div>
+  </div>
+</div>
+
+<!-- 지출 등록 모달 -->
+<div class="overlay" id="expenseModal">
+  <div class="modal modal-sm">
+    <div class="modal-hd">
+      <span class="modal-title" id="expense-modal-title">💸 지출 등록</span>
+      <button class="modal-close" onclick="closeExpenseModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row2">
+        <div class="field"><label>날짜</label><input type="date" id="exp-inp-date"></div>
+        <div class="field"><label>지출구분</label><input type="text" id="exp-inp-category" placeholder="예: 자동차, 보험, 운영비"></div>
+      </div>
+      <div class="field"><label>내용</label><input type="text" id="exp-inp-desc" placeholder="예: 탁송비, 매입비용 등"></div>
+      <div class="field"><label>지출금액 (원)</label><input type="number" id="exp-inp-amount" placeholder="0"></div>
+      <div class="field"><label>메모</label><input type="text" id="exp-inp-memo" placeholder="메모"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeExpenseModal()">취소</button>
+      <button class="btn btn-p" onclick="saveExpense()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 통합현황 페이지 (어드민 전용) -->
+<div id="page-totalview" class="page">
+  <div class="filter-bar" style="margin-bottom:16px">
+    <span style="font-size:13px;font-weight:700;color:var(--tx)">📈 통합 수입/지출 현황</span>
+    <select class="sort-sel" id="total-year-filter" onchange="renderTotalView()">
+      <option value="">전체</option>
+    </select>
+    <button class="btn" onclick="fetchCarIncome()">🔄 새로고침</button>
+  </div>
+
+  <!-- 통합 요약 카드 -->
+  <div class="stats stats-4" style="margin-bottom:20px">
+    <div class="stat c-ac"><div class="stat-lbl">정책자금 수입</div><div class="stat-val" id="tv-policy">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-pu"><div class="stat-lbl">자금외 수입</div><div class="stat-val" id="tv-extra">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-gn"><div class="stat-lbl">총 수입</div><div class="stat-val" id="tv-total-income">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-rs"><div class="stat-lbl">총 지출</div><div class="stat-val" id="tv-total-expense">0<span class="stat-unit">원</span></div></div>
+  </div>
+  <div class="stats stats-2" style="margin-bottom:24px">
+    <div class="stat c-gn"><div class="stat-lbl">순수익 (수입 - 지출)</div><div class="stat-val" id="tv-net">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-am"><div class="stat-lbl">부가세 합계</div><div class="stat-val" id="tv-vat">0<span class="stat-unit">원</span></div></div>
+  </div>
+
+  <!-- 월별 요약 테이블 -->
+  <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px;padding-left:4px">▶ 월별 요약</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>월</th>
+          <th style="color:var(--ac)">정책자금 수입</th>
+          <th style="color:var(--pu)">자금외 수입</th>
+          <th style="color:var(--gn)">총 수입</th>
+          <th style="color:var(--rs)">총 지출</th>
+          <th style="color:var(--gn)">순수익</th>
+          <th style="color:var(--am)">부가세</th>
+        </tr>
+      </thead>
+      <tbody id="tv-tbody">
+        <tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -2856,18 +2955,22 @@ function parseAdRows(rows){
 </script>
 
 <script>
-// ========== 자동차 수입 ==========
+// ========== 자금외수입 ==========
 let carData = [];
+let expenseData = [];
 let carEditId = null;
+let expEditId = null;
 
 async function fetchCarIncome(){
   try {
-    const res = await fetch(LANDING_URL+'/rest/v1/car_income?order=date.desc&limit=1000', {
-      headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
-    });
-    carData = await res.json();
+    const [r1, r2] = await Promise.all([
+      fetch(LANDING_URL+'/rest/v1/car_income?order=date.desc&limit=1000', { headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }}),
+      fetch(LANDING_URL+'/rest/v1/extra_expense?order=date.desc&limit=1000', { headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }})
+    ]);
+    carData = await r1.json();
+    expenseData = await r2.json();
     renderCarIncome();
-  } catch(e){ console.error('자동차 수입 로드 실패', e); }
+  } catch(e){ console.error('자금외수입 로드 실패', e); }
 }
 
 function calcCarVat(){
@@ -2887,12 +2990,13 @@ function calcCarVat(){
 
 function openCarModal(id){
   carEditId = id || null;
-  document.getElementById('car-modal-title').textContent = id ? '🚗 수입 수정' : '🚗 수입 등록';
+  document.getElementById('car-modal-title').textContent = id ? '💰 수입 수정' : '💰 수입 등록';
   if(id){
     const r = carData.find(d=>d.id===id);
     if(!r) return;
     document.getElementById('car-inp-date').value = r.date||'';
     document.getElementById('car-inp-delivery').value = r.delivery_date||'';
+    document.getElementById('car-inp-category').value = r.category||'';
     document.getElementById('car-inp-name').value = r.car_name||'';
     document.getElementById('car-inp-amount').value = r.amount||'';
     document.getElementById('car-inp-invoice').checked = r.invoice_issued||false;
@@ -2900,6 +3004,7 @@ function openCarModal(id){
   } else {
     document.getElementById('car-inp-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('car-inp-delivery').value = '';
+    document.getElementById('car-inp-category').value = '';
     document.getElementById('car-inp-name').value = '';
     document.getElementById('car-inp-amount').value = '';
     document.getElementById('car-inp-invoice').checked = false;
@@ -2920,6 +3025,7 @@ async function saveCarIncome(){
   const payload = {
     date,
     delivery_date: document.getElementById('car-inp-delivery').value || null,
+    category: document.getElementById('car-inp-category').value.trim() || '기타',
     car_name: document.getElementById('car-inp-name').value.trim(),
     amount: parseInt(document.getElementById('car-inp-amount').value)||0,
     invoice_issued: document.getElementById('car-inp-invoice').checked,
@@ -2947,8 +3053,71 @@ async function saveCarIncome(){
 async function deleteCarIncome(id){
   if(!confirm('삭제하시겠습니까?')) return;
   await fetch(LANDING_URL+'/rest/v1/car_income?id=eq.'+id, {
-    method:'DELETE',
-    headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }
+    method:'DELETE', headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }
+  });
+  fetchCarIncome();
+}
+
+// 지출 모달
+function openExpenseModal(id){
+  expEditId = id || null;
+  document.getElementById('expense-modal-title').textContent = id ? '💸 지출 수정' : '💸 지출 등록';
+  if(id){
+    const r = expenseData.find(d=>d.id===id);
+    if(!r) return;
+    document.getElementById('exp-inp-date').value = r.date||'';
+    document.getElementById('exp-inp-category').value = r.category||'';
+    document.getElementById('exp-inp-desc').value = r.description||'';
+    document.getElementById('exp-inp-amount').value = r.amount||'';
+    document.getElementById('exp-inp-memo').value = r.memo||'';
+  } else {
+    document.getElementById('exp-inp-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('exp-inp-category').value = '';
+    document.getElementById('exp-inp-desc').value = '';
+    document.getElementById('exp-inp-amount').value = '';
+    document.getElementById('exp-inp-memo').value = '';
+  }
+  document.getElementById('expenseModal').classList.add('on');
+}
+
+function closeExpenseModal(){
+  document.getElementById('expenseModal').classList.remove('on');
+  expEditId = null;
+}
+
+async function saveExpense(){
+  const date = document.getElementById('exp-inp-date').value;
+  if(!date){ alert('날짜를 입력해주세요.'); return; }
+  const payload = {
+    date,
+    category: document.getElementById('exp-inp-category').value.trim()||'기타',
+    description: document.getElementById('exp-inp-desc').value.trim(),
+    amount: parseInt(document.getElementById('exp-inp-amount').value)||0,
+    memo: document.getElementById('exp-inp-memo').value.trim()
+  };
+  try {
+    if(expEditId){
+      await fetch(LANDING_URL+'/rest/v1/extra_expense?id=eq.'+expEditId, {
+        method:'PATCH',
+        headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      await fetch(LANDING_URL+'/rest/v1/extra_expense', {
+        method:'POST',
+        headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+    }
+    closeExpenseModal();
+    fetchCarIncome();
+  } catch(e){ alert('저장 실패: '+e.message); }
+}
+
+async function deleteExpense(id){
+  if(!confirm('삭제하시겠습니까?')) return;
+  await fetch(LANDING_URL+'/rest/v1/extra_expense?id=eq.'+id, {
+    method:'DELETE', headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }
   });
   fetchCarIncome();
 }
@@ -2956,59 +3125,174 @@ async function deleteCarIncome(id){
 function renderCarIncome(){
   const periodFilter = parseInt(document.getElementById('car-period-filter')?.value||'0');
   const now = new Date();
-  let filtered = carData.filter(d => {
+  const filterFn = d => {
     if(!periodFilter) return true;
-    const diff = (now - new Date(d.date)) / (1000*60*60*24*30);
-    return diff <= periodFilter;
-  });
+    return (now - new Date(d.date)) / (1000*60*60*24*30) <= periodFilter;
+  };
+  const filtered = carData.filter(filterFn);
+  const filteredExp = expenseData.filter(filterFn);
 
   // 요약 카드
-  let totalAmt=0, totalSupply=0, totalVat=0, invoiceCnt=0;
+  let totalAmt=0, totalSupply=0, totalVat=0, invoiceCnt=0, totalExp=0;
   filtered.forEach(d => {
     totalAmt += d.amount||0;
     if(d.invoice_issued){
       const supply = Math.round((d.amount||0)/1.1);
-      const vat = (d.amount||0) - supply;
       totalSupply += supply;
-      totalVat += vat;
+      totalVat += (d.amount||0) - supply;
       invoiceCnt++;
     } else {
       totalSupply += d.amount||0;
     }
   });
+  filteredExp.forEach(d => totalExp += d.amount||0);
+  const net = totalAmt - totalExp;
+
   document.getElementById('car-s-total').innerHTML = `${totalAmt.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('car-s-expense').innerHTML = `${totalExp.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('car-s-net').innerHTML = `<span style="color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}</span><span class="stat-unit">원</span>`;
   document.getElementById('car-s-supply').innerHTML = `${totalSupply.toLocaleString()}<span class="stat-unit">원</span>`;
   document.getElementById('car-s-vat').innerHTML = `${totalVat.toLocaleString()}<span class="stat-unit">원</span>`;
   document.getElementById('car-s-invoice').innerHTML = `${invoiceCnt}<span class="stat-unit">건</span>`;
 
-  // 테이블
+  // 수입 테이블
   const tbody = document.getElementById('car-tbody');
   if(!filtered.length){
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>';
-    return;
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>';
+  } else {
+    tbody.innerHTML = filtered.map(d => {
+      const supply = d.invoice_issued ? Math.round((d.amount||0)/1.1) : (d.amount||0);
+      const vat = d.invoice_issued ? (d.amount||0) - supply : 0;
+      const invoiceBadge = d.invoice_issued
+        ? `<span class="badge b-계약완료" style="font-size:11px">발행</span>`
+        : `<span class="badge b-신규" style="font-size:11px;opacity:0.5">미발행</span>`;
+      return `<tr style="line-height:1.8">
+        <td style="font-size:12px;white-space:nowrap">${d.date||'-'}</td>
+        <td style="font-size:12px;color:var(--pu);font-weight:600">${d.category||'-'}</td>
+        <td style="font-size:13px;font-weight:700">${d.car_name||'-'}</td>
+        <td style="font-size:12px;color:var(--tx2)">${d.delivery_date||'-'}</td>
+        <td style="font-family:monospace;font-size:13px;font-weight:700;color:var(--ac)">${(d.amount||0).toLocaleString()}원</td>
+        <td style="font-family:monospace;font-size:12px">${supply.toLocaleString()}원</td>
+        <td style="font-family:monospace;font-size:12px;color:${d.invoice_issued?'var(--am)':'var(--tx3)'}">${d.invoice_issued?vat.toLocaleString()+'원':'-'}</td>
+        <td style="text-align:center">${invoiceBadge}</td>
+        <td style="font-size:12px;color:var(--tx2)">${d.memo||'-'}</td>
+        <td>
+          <button class="btn btn-sm" onclick="openCarModal('${d.id}')" style="margin-bottom:3px">수정</button>
+          <button class="btn btn-sm btn-r" onclick="deleteCarIncome('${d.id}')">삭제</button>
+        </td>
+      </tr>`;
+    }).join('');
   }
-  tbody.innerHTML = filtered.map(d => {
-    const supply = d.invoice_issued ? Math.round((d.amount||0)/1.1) : (d.amount||0);
-    const vat = d.invoice_issued ? (d.amount||0) - supply : 0;
-    const invoiceBadge = d.invoice_issued
-      ? `<span class="badge b-계약완료" style="font-size:11px">발행</span>`
-      : `<span class="badge b-신규" style="font-size:11px;opacity:0.5">미발행</span>`;
-    return `<tr style="line-height:1.8">
+
+  // 지출 테이블
+  const etbody = document.getElementById('expense-tbody');
+  if(!filteredExp.length){
+    etbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>';
+  } else {
+    etbody.innerHTML = filteredExp.map(d => `<tr style="line-height:1.8">
       <td style="font-size:12px;white-space:nowrap">${d.date||'-'}</td>
-      <td style="font-size:13px;font-weight:700">${d.car_name||'-'}</td>
-      <td style="font-size:12px;color:var(--tx2)">${d.delivery_date||'-'}</td>
-      <td style="font-family:monospace;font-size:13px;font-weight:700;color:var(--ac)">${(d.amount||0).toLocaleString()}원</td>
-      <td style="font-family:monospace;font-size:12px;color:var(--tx)">${supply.toLocaleString()}원</td>
-      <td style="font-family:monospace;font-size:12px;color:${d.invoice_issued?'var(--am)':'var(--tx3)'}">${d.invoice_issued ? vat.toLocaleString()+'원' : '-'}</td>
-      <td style="text-align:center">${invoiceBadge}</td>
+      <td style="font-size:12px;color:var(--rs);font-weight:600">${d.category||'-'}</td>
+      <td style="font-size:13px;font-weight:700">${d.description||'-'}</td>
+      <td style="font-family:monospace;font-size:13px;font-weight:700;color:var(--rs)">${(d.amount||0).toLocaleString()}원</td>
       <td style="font-size:12px;color:var(--tx2)">${d.memo||'-'}</td>
       <td>
-        <button class="btn btn-sm" onclick="openCarModal('${d.id}')" style="margin-bottom:3px">수정</button>
-        <button class="btn btn-sm btn-r" onclick="deleteCarIncome('${d.id}')">삭제</button>
+        <button class="btn btn-sm" onclick="openExpenseModal('${d.id}')" style="margin-bottom:3px">수정</button>
+        <button class="btn btn-sm btn-r" onclick="deleteExpense('${d.id}')">삭제</button>
       </td>
+    </tr>`).join('');
+  }
+
+  // 통합현황도 같이 갱신
+  if(document.getElementById('page-totalview')?.classList.contains('on')) renderTotalView();
+}
+
+function renderTotalView(){
+  // 연도 필터 옵션 동적 생성
+  const yearSel = document.getElementById('total-year-filter');
+  const years = new Set();
+  [...txList, ...carData, ...expenseData].forEach(d => {
+    const y = (d.date||d.txDate||'').substring(0,4);
+    if(y) years.add(y);
+  });
+  const curYear = document.getElementById('total-year-filter')?.value||'';
+  yearSel.innerHTML = '<option value="">전체</option>' + [...years].sort().reverse().map(y=>`<option value="${y}" ${y===curYear?'selected':''}>${y}년</option>`).join('');
+
+  const yearFilter = yearSel.value;
+  const filterFn = d => {
+    const dt = d.date||d.txDate||'';
+    return !yearFilter || dt.startsWith(yearFilter);
+  };
+
+  // 정책자금 수입 (txList에서 계산)
+  const policyTx = txList.filter(filterFn);
+  let policyIncome = 0;
+  policyTx.forEach(tx => {
+    if(tx.type==='계약금'||tx.type==='자금실행수수료'||tx.type==='수수료') policyIncome += tx.amount||0;
+  });
+
+  // 자금외 수입/지출
+  const extraIncome = carData.filter(filterFn).reduce((s,d)=>s+(d.amount||0),0);
+  const extraExpense = expenseData.filter(filterFn).reduce((s,d)=>s+(d.amount||0),0);
+
+  // 부가세
+  let totalVat = 0;
+  carData.filter(filterFn).forEach(d => {
+    if(d.invoice_issued) totalVat += (d.amount||0) - Math.round((d.amount||0)/1.1);
+  });
+
+  const totalIncome = policyIncome + extraIncome;
+  const net = totalIncome - extraExpense;
+
+  document.getElementById('tv-policy').innerHTML = `${policyIncome.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('tv-extra').innerHTML = `${extraIncome.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('tv-total-income').innerHTML = `${totalIncome.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('tv-total-expense').innerHTML = `${extraExpense.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('tv-net').innerHTML = `<span style="color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}</span><span class="stat-unit">원</span>`;
+  document.getElementById('tv-vat').innerHTML = `${totalVat.toLocaleString()}<span class="stat-unit">원</span>`;
+
+  // 월별 요약
+  const months = {};
+  const addMonth = (ym, key, amt) => {
+    if(!months[ym]) months[ym] = {policy:0, extra:0, expense:0, vat:0};
+    months[ym][key] += amt;
+  };
+
+  policyTx.forEach(tx => {
+    const ym = (tx.txDate||'').substring(0,7);
+    if(ym) addMonth(ym, 'policy', tx.amount||0);
+  });
+  carData.filter(filterFn).forEach(d => {
+    const ym = (d.date||'').substring(0,7);
+    if(ym){
+      addMonth(ym, 'extra', d.amount||0);
+      if(d.invoice_issued) addMonth(ym, 'vat', (d.amount||0) - Math.round((d.amount||0)/1.1));
+    }
+  });
+  expenseData.filter(filterFn).forEach(d => {
+    const ym = (d.date||'').substring(0,7);
+    if(ym) addMonth(ym, 'expense', d.amount||0);
+  });
+
+  const tbody = document.getElementById('tv-tbody');
+  const sortedMonths = Object.keys(months).sort().reverse();
+  if(!sortedMonths.length){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = sortedMonths.map(ym => {
+    const m = months[ym];
+    const total = m.policy + m.extra;
+    const net = total - m.expense;
+    return `<tr style="line-height:1.8">
+      <td style="font-weight:700;font-size:13px">${ym}</td>
+      <td style="font-family:monospace;color:var(--ac)">${m.policy.toLocaleString()}원</td>
+      <td style="font-family:monospace;color:var(--pu)">${m.extra.toLocaleString()}원</td>
+      <td style="font-family:monospace;font-weight:700;color:var(--gn)">${total.toLocaleString()}원</td>
+      <td style="font-family:monospace;color:var(--rs)">${m.expense.toLocaleString()}원</td>
+      <td style="font-family:monospace;font-weight:700;color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}원</td>
+      <td style="font-family:monospace;color:var(--am)">${m.vat?m.vat.toLocaleString()+'원':'-'}</td>
     </tr>`;
   }).join('');
-}
 </script>
 
 </body>
