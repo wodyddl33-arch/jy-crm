@@ -2265,6 +2265,43 @@ async function importXlsx(input){
         <div class="field"><label>품목명</label><input type="text" id="car-inp-name" placeholder="예: 아반떼 CN7, 실손보험 등"></div>
       </div>
       <div class="row2">
+        <div class="field"><label>고객명</label><input type="text" id="car-inp-customer" placeholder="예: 김철수"></div>
+        <div class="field"><label>계약종류</label>
+          <select id="car-inp-contract-type" onchange="toggleContractWrap()">
+            <option value="">선택안함</option>
+            <option value="장기렌트">장기렌트</option>
+            <option value="리스">리스</option>
+            <option value="할부">할부</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+      </div>
+      <!-- 계약기간 (계약종류 선택 시 표시) -->
+      <div id="car-contract-wrap" style="display:none">
+        <div class="row2">
+          <div class="field"><label>인도일</label><input type="date" id="car-inp-handover" oninput="calcContractExpiry()"></div>
+          <div class="field"><label>계약기간</label>
+            <div style="display:flex;gap:6px">
+              <input type="number" id="car-inp-contract-period" placeholder="예: 4" min="1" style="flex:1" oninput="calcContractExpiry()">
+              <select id="car-inp-contract-unit" onchange="calcContractExpiry()" style="width:70px">
+                <option value="year">년</option>
+                <option value="month">개월</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div id="car-expiry-preview" style="display:none;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:4px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="color:var(--tx2)">계약 만료일</span>
+            <span id="car-expiry-date" style="color:var(--am);font-weight:700">-</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--tx2)">할일 자동등록</span>
+            <span style="color:var(--gn);font-size:11px">만료 3개월/2개월/1개월 전 🗓️</span>
+          </div>
+        </div>
+      </div>
+      <div class="row2">
         <div class="field">
           <label>수입금액 (원)</label>
           <input type="number" id="car-inp-amount" placeholder="0" oninput="calcCarVat()">
@@ -3001,6 +3038,11 @@ function openCarModal(id){
     document.getElementById('car-inp-delivery').value = r.delivery_date||'';
     document.getElementById('car-inp-category').value = r.category||'';
     document.getElementById('car-inp-name').value = r.car_name||'';
+    document.getElementById('car-inp-customer').value = r.customer_name||'';
+    document.getElementById('car-inp-contract-type').value = r.contract_type||'';
+    document.getElementById('car-inp-handover').value = r.handover_date||'';
+    document.getElementById('car-inp-contract-period').value = r.contract_period||'';
+    document.getElementById('car-inp-contract-unit').value = r.contract_unit||'year';
     document.getElementById('car-inp-amount').value = r.amount||'';
     document.getElementById('car-inp-invoice').checked = r.invoice_issued||false;
     document.getElementById('car-inp-memo').value = r.memo||'';
@@ -3009,12 +3051,42 @@ function openCarModal(id){
     document.getElementById('car-inp-delivery').value = '';
     document.getElementById('car-inp-category').value = '';
     document.getElementById('car-inp-name').value = '';
+    document.getElementById('car-inp-customer').value = '';
+    document.getElementById('car-inp-contract-type').value = '';
+    document.getElementById('car-inp-handover').value = '';
+    document.getElementById('car-inp-contract-period').value = '';
+    document.getElementById('car-inp-contract-unit').value = 'year';
     document.getElementById('car-inp-amount').value = '';
     document.getElementById('car-inp-invoice').checked = false;
     document.getElementById('car-inp-memo').value = '';
   }
+  toggleContractWrap();
   calcCarVat();
+  calcContractExpiry();
   document.getElementById('carModal').classList.add('on');
+}
+
+function toggleContractWrap(){
+  const type = document.getElementById('car-inp-contract-type').value;
+  const wrap = document.getElementById('car-contract-wrap');
+  wrap.style.display = type ? 'block' : 'none';
+}
+
+function calcContractExpiry(){
+  const handover = document.getElementById('car-inp-handover').value;
+  const period = parseInt(document.getElementById('car-inp-contract-period').value)||0;
+  const unit = document.getElementById('car-inp-contract-unit').value;
+  const preview = document.getElementById('car-expiry-preview');
+  if(handover && period){
+    const d = new Date(handover);
+    if(unit === 'year') d.setFullYear(d.getFullYear() + period);
+    else d.setMonth(d.getMonth() + period);
+    const expiry = d.toISOString().split('T')[0];
+    document.getElementById('car-expiry-date').textContent = expiry;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
 }
 
 function closeCarModal(){
@@ -3025,11 +3097,31 @@ function closeCarModal(){
 async function saveCarIncome(){
   const date = document.getElementById('car-inp-date').value;
   if(!date){ alert('날짜를 입력해주세요.'); return; }
+  const contractType = document.getElementById('car-inp-contract-type').value;
+  const handover = document.getElementById('car-inp-handover').value;
+  const period = parseInt(document.getElementById('car-inp-contract-period').value)||0;
+  const unit = document.getElementById('car-inp-contract-unit').value;
+
+  // 만료일 계산
+  let expiryDate = null;
+  if(handover && period && contractType){
+    const d = new Date(handover);
+    if(unit === 'year') d.setFullYear(d.getFullYear() + period);
+    else d.setMonth(d.getMonth() + period);
+    expiryDate = d.toISOString().split('T')[0];
+  }
+
   const payload = {
     date,
     delivery_date: document.getElementById('car-inp-delivery').value || null,
     category: document.getElementById('car-inp-category').value.trim() || '기타',
     car_name: document.getElementById('car-inp-name').value.trim(),
+    customer_name: document.getElementById('car-inp-customer').value.trim(),
+    contract_type: contractType || null,
+    handover_date: handover || null,
+    contract_period: period || null,
+    contract_unit: unit,
+    expiry_date: expiryDate,
     amount: parseInt(document.getElementById('car-inp-amount').value)||0,
     invoice_issued: document.getElementById('car-inp-invoice').checked,
     memo: document.getElementById('car-inp-memo').value.trim()
@@ -3048,9 +3140,32 @@ async function saveCarIncome(){
         body: JSON.stringify(payload)
       });
     }
+    // 계약 만료 할일 자동등록
+    if(expiryDate && contractType && payload.car_name){
+      registerContractTodos(payload.customer_name, payload.car_name, contractType, expiryDate);
+    }
     closeCarModal();
     fetchCarIncome();
   } catch(e){ alert('저장 실패: '+e.message); }
+}
+
+function registerContractTodos(customer, carName, contractType, expiryDate){
+  const label = customer ? `${customer} ${carName}` : carName;
+  const months = [3, 2, 1];
+  months.forEach(m => {
+    const d = new Date(expiryDate);
+    d.setMonth(d.getMonth() - m);
+    const dateStr = d.toISOString().split('T')[0];
+    const text = `[${contractType}] ${label} 계약만료 ${m}개월전`;
+    const todos = getCalTodos(dateStr);
+    // 중복 체크
+    if(!todos.find(t => t.text === text)){
+      todos.push({ id: 'car_'+Date.now()+'_'+m, text, done: false, tag: '계약만료' });
+      setCalTodos(dateStr, todos);
+    }
+  });
+  supaSaveCalTodos();
+  alert(`계약 만료 할일이 캘린더에 등록됐습니다!\n만료 3개월/2개월/1개월 전 총 3건`);
 }
 
 async function deleteCarIncome(id){
