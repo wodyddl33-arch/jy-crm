@@ -3416,7 +3416,7 @@ function renderCarMonthlySummary(){
   const tbody = document.getElementById('car-summary-tbody');
   if(!tbody) return;
   tbody.innerHTML = rows.join('') +
-    `<tr class="trow-total"><td>합계</td><td style="color:var(--gn)">${tot.income.toLocaleString()}</td><td>${tot.supply.toLocaleString()}</td><td style="color:var(--am)">${tot.vatSale.toLocaleString()}</td><td style="color:var(--gn)">${tot.vatPurchase?'+'+tot.vatPurchase.toLocaleString():'—'}</td><td style="color:var(--rs);font-weight:800">${totVatNet.toLocaleString()}</td><td style="color:var(--rs)">${tot.expense.toLocaleString()}</td><td style="color:${totProfit>=0?'var(--gn)':'var(--rs)';font-weight:700}">${(totProfit>=0?'+':'')+totProfit.toLocaleString()}</td><td></td></tr>`;
+    `<tr class="trow-total"><td>합계</td><td style="color:var(--gn)">${tot.income.toLocaleString()}</td><td>${tot.supply.toLocaleString()}</td><td style="color:var(--am)">${tot.vatSale.toLocaleString()}</td><td style="color:var(--gn)">${tot.vatPurchase?'+'+tot.vatPurchase.toLocaleString():'—'}</td><td style="color:var(--rs);font-weight:800">${totVatNet.toLocaleString()}</td><td style="color:var(--rs)">${tot.expense.toLocaleString()}</td><td style="color:${totProfit>=0?'var(--gn)':'var(--rs)'};font-weight:700">${(totProfit>=0?'+':'')+totProfit.toLocaleString()}</td><td></td></tr>`;
 
   // 차트 렌더링
   const chartData = Array.from({length:12},(_,i)=>{
