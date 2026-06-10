@@ -2585,8 +2585,9 @@ function saveAdInput(){
 function getDbCountByDate(dateStr){
   if(!landingData || !landingData.length) return 0;
   return landingData.filter(r => {
-    const d = new Date(new Date(r.created_at).getTime() + 9*60*60*1000);
-    const ds = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+    // 한국 시간(KST = UTC+9) 기준 날짜
+    const kst = new Date(new Date(r.created_at).getTime() + 9*60*60*1000);
+    const ds = `${kst.getUTCFullYear()}-${String(kst.getUTCMonth()+1).padStart(2,'0')}-${String(kst.getUTCDate()).padStart(2,'0')}`;
     return ds === dateStr;
   }).length;
 }
