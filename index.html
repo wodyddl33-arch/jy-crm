@@ -878,7 +878,7 @@ function goPage(id, btn) {
   if(id === 'trash') fetchTrashData();
   if(id === 'adstats') fetchAllLandingForAd();
   if(id === 'carincome') fetchCarIncome();
-  if(id === 'totalview') fetchCarIncome().then(()=>renderTotalView());
+  if(id === 'totalview') fetchCarIncome().then(()=>renderTotalView()).catch(()=>renderTotalView());
 }
 function goSubPage(id, btn) {
   const targetEl = document.getElementById(id);
@@ -2387,7 +2387,7 @@ async function importXlsx(input){
     <button class="stab" onclick="goSubPage('tv-sub-detail',this)">📋 상세 내역</button>
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px;">
-    <button class="btn" onclick="fetchCarIncome().then(()=>renderTotalView())">🔄 새로고침</button>
+    <button class="btn" onclick="fetchCarIncome().then(()=>renderTotalView()).catch(()=>renderTotalView())">🔄 새로고침</button>
   </div>
 
   <!-- 월별 요약 서브페이지 -->
@@ -3496,6 +3496,11 @@ function renderCarDetail(){
 }
 
 function renderTotalView(){
+  // expenseData 미로드 시 fetch 후 재실행
+  if(!carData.length && !expenseData.length){
+    fetchCarIncome().then(()=>renderTotalView());
+    return;
+  }
   // 연도 셀렉트 동적 생성
   const yearSel = document.getElementById('total-year-filter');
   if(!yearSel) return;
