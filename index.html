@@ -2177,117 +2177,73 @@ async function importXlsx(input){
   </div>
 </div>
 
-<!-- 자동차 수입 페이지 (어드민 전용) -->
+<!-- 자금외수입 페이지 (어드민 전용) -->
 <div id="page-carincome" class="page">
-  <!-- 상단 필터바 -->
-  <div class="filter-bar" style="margin-bottom:16px">
-    <span style="font-size:13px;font-weight:700;color:var(--tx)">💰 자금외수입 관리</span>
-    <select class="sort-sel" id="car-period-filter" onchange="renderCarIncome()">
-      <option value="">전체 기간</option>
-      <option value="3">최근 3개월</option>
-      <option value="6">최근 6개월</option>
-      <option value="12">올해</option>
-    </select>
+  <!-- 서브탭 -->
+  <div class="sub-nav">
+    <button class="stab on" onclick="goSubPage('car-sub-summary',this)">📊 월별 요약</button>
+    <button class="stab" onclick="goSubPage('car-sub-detail',this)">📋 상세 내역</button>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px;">
     <button class="btn btn-p" onclick="openCarModal()">+ 수입 등록</button>
     <button class="btn btn-g" onclick="openExpenseModal()">+ 지출 등록</button>
     <button class="btn" onclick="fetchCarIncome()">🔄 새로고침</button>
   </div>
 
-  <!-- 요약 카드 -->
-  <div class="stats stats-6" style="margin-bottom:20px">
-    <div class="stat c-ac"><div class="stat-lbl">총 수입</div><div class="stat-val" id="car-s-total">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-rs"><div class="stat-lbl">총 지출</div><div class="stat-val" id="car-s-expense">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-gn"><div class="stat-lbl">순수익</div><div class="stat-val" id="car-s-net">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-gn"><div class="stat-lbl">공급가액</div><div class="stat-val" id="car-s-supply">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-am"><div class="stat-lbl">부가세</div><div class="stat-val" id="car-s-vat">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-pu"><div class="stat-lbl">계산서 발행</div><div class="stat-val" id="car-s-invoice">0<span class="stat-unit">건</span></div></div>
-  </div>
-
-  <!-- 서브탭 -->
-  <div class="sub-nav">
-    <button class="stab on" onclick="goSubPage('car-sub-monthly', this)">📊 월별 요약</button>
-    <button class="stab" onclick="goSubPage('car-sub-income', this)">▶ 수입 내역</button>
-    <button class="stab" onclick="goSubPage('car-sub-expense', this)">▶ 지출 내역</button>
-  </div>
-
   <!-- 월별 요약 서브페이지 -->
-  <div id="car-sub-monthly" class="subpage on">
-    <!-- 바차트 -->
-    <div class="panel" style="margin-bottom:16px">
-      <div class="panel-hd"><span class="panel-title">월별 수입/지출 추이</span><span class="panel-sub" id="car-chart-label" style="color:var(--tx3);font-size:11px"></span></div>
-      <div class="panel-body">
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;font-size:11px;color:var(--tx3)">
-          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--ac)"></span>수입</span>
-          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rs)"></span>지출</span>
-          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--gn)"></span>순수익</span>
+  <div id="car-sub-summary" class="subpage on">
+    <!-- 상단 요약 카드 (매출정리와 동일 8칸 구조) -->
+    <div class="stats" style="grid-template-columns:repeat(8,1fr);margin-bottom:16px;">
+      <div class="stat c-gn"><div class="stat-lbl">이번달 수입</div><div class="stat-val" id="car-s-month-in">0<span class="stat-unit">원</span></div><div class="stat-sub" id="car-s-month-lbl"></div></div>
+      <div class="stat c-am"><div class="stat-lbl">납부 부가세</div><div class="stat-val" id="car-s-vat">0<span class="stat-unit">원</span></div><div class="stat-sub" id="car-s-vat-sub">매출-매입 차감</div></div>
+      <div class="stat c-ac"><div class="stat-lbl">이번달 순수익</div><div class="stat-val" id="car-s-net">0<span class="stat-unit">원</span></div><div class="stat-sub">수입 - 지출</div></div>
+      <div class="stat c-rs"><div class="stat-lbl">이번달 지출</div><div class="stat-val" id="car-s-expense">0<span class="stat-unit">원</span></div><div class="stat-sub">지출 합계</div></div>
+      <div class="stat c-am"><div class="stat-lbl">이번달 이익</div><div class="stat-val" id="car-s-profit">0<span class="stat-unit">원</span></div><div class="stat-sub">수입 - 지출</div></div>
+      <div class="stat c-gn"><div class="stat-lbl">연간 누적수입</div><div class="stat-val" id="car-s-year-in">0<span class="stat-unit">원</span></div><div class="stat-sub" id="car-s-year-lbl"></div></div>
+      <div class="stat c-pu"><div class="stat-lbl">연간 순이익</div><div class="stat-val" id="car-s-year-profit">0<span class="stat-unit">원</span></div><div class="stat-sub">연간 누적</div></div>
+      <div class="stat c-pu"><div class="stat-lbl">계산서 발행</div><div class="stat-val" id="car-s-invoice">0<span class="stat-unit">건</span></div><div class="stat-sub">누적</div></div>
+    </div>
+    <!-- 차트 2개 (매출정리와 동일) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">📈 월별 수입/지출</div></div>
+        <div class="panel-body">
+          <div class="chart-area" id="car-rev-chart"></div>
+          <div style="display:flex;gap:12px;margin-top:6px;">
+            <span style="font-size:11px;color:var(--tx3);"><span style="display:inline-block;width:8px;height:8px;background:var(--gn);border-radius:2px;margin-right:4px;"></span>수입</span>
+            <span style="font-size:11px;color:var(--tx3);"><span style="display:inline-block;width:8px;height:8px;background:var(--rs);border-radius:2px;margin-right:4px;"></span>지출</span>
+          </div>
         </div>
-        <div id="car-month-chart" style="display:flex;align-items:flex-end;gap:6px;height:120px;overflow-x:auto;padding-bottom:4px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">💰 월별 순이익</div></div>
+        <div class="panel-body"><div class="chart-area" id="car-profit-chart"></div></div>
       </div>
     </div>
     <!-- 월별 요약 테이블 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;">월별 요약</div>
+      <select class="yr-sel" id="car-yr-sel" onchange="renderCarMonthlySummary()"></select>
+    </div>
     <div class="tbl-wrap">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th>월</th>
-            <th style="color:var(--ac)">수입</th>
-            <th style="color:var(--gn)">공급가액</th>
-            <th style="color:var(--am)">부가세</th>
-            <th style="color:var(--rs)">지출</th>
-            <th style="color:var(--gn)">순수익</th>
-            <th>계산서</th>
-          </tr>
-        </thead>
-        <tbody id="car-monthly-tbody">
-          <tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
-        </tbody>
+      <table class="tbl" style="min-width:700px;">
+        <thead><tr><th>월</th><th>총수입</th><th>공급가액</th><th>매출부가세</th><th>매입부가세</th><th>납부부가세</th><th>지출</th><th>순이익</th><th>누적수입</th></tr></thead>
+        <tbody id="car-summary-tbody"></tbody>
       </table>
     </div>
   </div>
 
-  <!-- 수입 내역 서브페이지 -->
-  <div id="car-sub-income" class="subpage">
-    <div class="tbl-wrap">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th style="width:90px">날짜</th>
-            <th style="width:90px">수입구분</th>
-            <th style="width:150px">품목명</th>
-            <th style="width:100px">출고/완료일</th>
-            <th style="width:110px">수입금액</th>
-            <th style="width:110px">공급가액</th>
-            <th style="width:90px">부가세</th>
-            <th style="width:80px">계산서</th>
-            <th>메모</th>
-            <th style="width:80px"></th>
-          </tr>
-        </thead>
-        <tbody id="car-tbody">
-          <tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
-        </tbody>
-      </table>
+  <!-- 상세 내역 서브페이지 -->
+  <div id="car-sub-detail" class="subpage">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;">상세 내역</div>
+      <select class="yr-sel" id="car-yr-detail" onchange="renderCarDetail()"></select>
     </div>
-  </div>
-
-  <!-- 지출 내역 서브페이지 -->
-  <div id="car-sub-expense" class="subpage">
+    <div class="mf-bar" id="car-mf-bar"></div>
     <div class="tbl-wrap">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th style="width:90px">날짜</th>
-            <th style="width:90px">지출구분</th>
-            <th style="width:200px">내용</th>
-            <th style="width:120px">지출금액</th>
-            <th style="width:80px">계산서</th>
-            <th>메모</th>
-            <th style="width:60px"></th>
-          </tr>
-        </thead>
-        <tbody id="expense-tbody">
-          <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
-        </tbody>
+      <table class="tbl" style="min-width:900px;">
+        <thead><tr><th>날짜</th><th>월</th><th>구분</th><th>품목/내용</th><th>수입구분</th><th>금액</th><th>공급가액</th><th>부가세</th><th>계산서</th><th>메모</th><th style="width:80px">관리</th></tr></thead>
+        <tbody id="car-detail-tbody"></tbody>
       </table>
     </div>
   </div>
@@ -2420,45 +2376,75 @@ async function importXlsx(input){
 
 <!-- 통합현황 페이지 (어드민 전용) -->
 <div id="page-totalview" class="page">
-  <div class="filter-bar" style="margin-bottom:16px">
-    <span style="font-size:13px;font-weight:700;color:var(--tx)">📈 통합 수입/지출 현황</span>
-    <select class="sort-sel" id="total-year-filter" onchange="renderTotalView()">
-      <option value="">전체</option>
-    </select>
-    <button class="btn" onclick="fetchCarIncome()">🔄 새로고침</button>
+  <!-- 서브탭 -->
+  <div class="sub-nav">
+    <button class="stab on" onclick="goSubPage('tv-sub-summary',this)">📊 월별 요약</button>
+    <button class="stab" onclick="goSubPage('tv-sub-detail',this)">📋 상세 내역</button>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px;">
+    <button class="btn" onclick="fetchCarIncome().then(()=>renderTotalView())">🔄 새로고침</button>
   </div>
 
-  <!-- 통합 요약 카드 -->
-  <div class="stats stats-4" style="margin-bottom:20px">
-    <div class="stat c-ac"><div class="stat-lbl">정책자금 수입</div><div class="stat-val" id="tv-policy">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-pu"><div class="stat-lbl">자금외 수입</div><div class="stat-val" id="tv-extra">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-gn"><div class="stat-lbl">총 수입</div><div class="stat-val" id="tv-total-income">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-rs"><div class="stat-lbl">총 지출</div><div class="stat-val" id="tv-total-expense">0<span class="stat-unit">원</span></div></div>
-  </div>
-  <div class="stats stats-2" style="margin-bottom:24px">
-    <div class="stat c-gn"><div class="stat-lbl">순수익 (수입 - 지출)</div><div class="stat-val" id="tv-net">0<span class="stat-unit">원</span></div></div>
-    <div class="stat c-am"><div class="stat-lbl">부가세 합계</div><div class="stat-val" id="tv-vat">0<span class="stat-unit">원</span></div></div>
+  <!-- 월별 요약 서브페이지 -->
+  <div id="tv-sub-summary" class="subpage on">
+    <!-- 상단 요약 카드 8개 -->
+    <div class="stats" style="grid-template-columns:repeat(8,1fr);margin-bottom:16px;">
+      <div class="stat c-ac"><div class="stat-lbl">정책자금 수입</div><div class="stat-val" id="tv-policy">0<span class="stat-unit">원</span></div><div class="stat-sub" id="tv-month-lbl"></div></div>
+      <div class="stat c-pu"><div class="stat-lbl">자금외 수입</div><div class="stat-val" id="tv-extra">0<span class="stat-unit">원</span></div><div class="stat-sub">이번달</div></div>
+      <div class="stat c-gn"><div class="stat-lbl">총 수입</div><div class="stat-val" id="tv-total-income">0<span class="stat-unit">원</span></div><div class="stat-sub">정책+자금외</div></div>
+      <div class="stat c-rs"><div class="stat-lbl">총 지출</div><div class="stat-val" id="tv-total-expense">0<span class="stat-unit">원</span></div><div class="stat-sub">이번달</div></div>
+      <div class="stat c-am"><div class="stat-lbl">이번달 순이익</div><div class="stat-val" id="tv-net">0<span class="stat-unit">원</span></div><div class="stat-sub">수입 - 지출</div></div>
+      <div class="stat c-gn"><div class="stat-lbl">연간 누적수입</div><div class="stat-val" id="tv-year-in">0<span class="stat-unit">원</span></div><div class="stat-sub" id="tv-year-lbl"></div></div>
+      <div class="stat c-pu"><div class="stat-lbl">연간 순이익</div><div class="stat-val" id="tv-year-profit">0<span class="stat-unit">원</span></div><div class="stat-sub">연간 누적</div></div>
+      <div class="stat c-am"><div class="stat-lbl">납부 부가세</div><div class="stat-val" id="tv-vat">0<span class="stat-unit">원</span></div><div class="stat-sub">매출-매입</div></div>
+    </div>
+    <!-- 차트 2개 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">📈 월별 수입/지출 (통합)</div></div>
+        <div class="panel-body">
+          <div class="chart-area" id="tv-rev-chart"></div>
+          <div style="display:flex;gap:12px;margin-top:6px;">
+            <span style="font-size:11px;color:var(--tx3);"><span style="display:inline-block;width:8px;height:8px;background:var(--gn);border-radius:2px;margin-right:4px;"></span>수입</span>
+            <span style="font-size:11px;color:var(--tx3);"><span style="display:inline-block;width:8px;height:8px;background:var(--rs);border-radius:2px;margin-right:4px;"></span>지출</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">💰 월별 순이익 (통합)</div></div>
+        <div class="panel-body"><div class="chart-area" id="tv-profit-chart"></div></div>
+      </div>
+    </div>
+    <!-- 월별 요약 테이블 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;">월별 요약</div>
+      <select class="yr-sel" id="total-year-filter" onchange="renderTotalView()">
+        <option value="">전체</option>
+      </select>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl" style="min-width:800px;">
+        <thead><tr><th>월</th><th style="color:var(--ac)">정책자금</th><th style="color:var(--pu)">자금외수입</th><th style="color:var(--gn)">총수입</th><th style="color:var(--rs)">총지출</th><th style="color:var(--gn)">순이익</th><th style="color:var(--am)">납부부가세</th><th>누적수입</th></tr></thead>
+        <tbody id="tv-tbody">
+          <tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- 월별 요약 테이블 -->
-  <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px;padding-left:4px">▶ 월별 요약</div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th>월</th>
-          <th style="color:var(--ac)">정책자금 수입</th>
-          <th style="color:var(--pu)">자금외 수입</th>
-          <th style="color:var(--gn)">총 수입</th>
-          <th style="color:var(--rs)">총 지출</th>
-          <th style="color:var(--gn)">순수익</th>
-          <th style="color:var(--am)">부가세</th>
-        </tr>
-      </thead>
-      <tbody id="tv-tbody">
-        <tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>
-      </tbody>
-    </table>
+  <!-- 상세 내역 서브페이지 -->
+  <div id="tv-sub-detail" class="subpage">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;">통합 상세 내역</div>
+      <select class="yr-sel" id="tv-yr-detail" onchange="renderTotalDetail()"></select>
+    </div>
+    <div class="mf-bar" id="tv-mf-bar"></div>
+    <div class="tbl-wrap">
+      <table class="tbl" style="min-width:900px;">
+        <thead><tr><th>날짜</th><th>월</th><th>구분</th><th>출처</th><th>항목/내용</th><th>금액</th><th>부가세</th><th>비고</th><th style="width:80px">관리</th></tr></thead>
+        <tbody id="tv-detail-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -3323,272 +3309,334 @@ async function deleteExpense(id){
 }
 
 function renderCarIncome(){
-  const periodFilter = parseInt(document.getElementById('car-period-filter')?.value||'0');
-  const now = new Date();
-  const filterFn = d => {
-    if(!periodFilter) return true;
-    return (now - new Date(d.date)) / (1000*60*60*24*30) <= periodFilter;
-  };
-  const filtered = carData.filter(filterFn);
-  const filteredExp = expenseData.filter(filterFn);
-
-  // 요약 카드
-  let totalAmt=0, totalSupply=0, totalVat=0, invoiceCnt=0, totalExp=0;
-  filtered.forEach(d => {
-    totalAmt += d.amount||0;
-    if(d.invoice_issued){
-      const supply = Math.round((d.amount||0)/1.1);
-      totalSupply += supply;
-      totalVat += (d.amount||0) - supply;
-      invoiceCnt++;
-    } else {
-      totalSupply += d.amount||0;
-    }
+  // ── 연도 셀렉트 초기화 ──
+  const allYears = new Set();
+  [...carData, ...expenseData].forEach(d => {
+    const y = (d.date||'').substring(0,4); if(y) allYears.add(y);
   });
-  filteredExp.forEach(d => totalExp += d.amount||0);
-  const net = totalAmt - totalExp;
+  const curY = new Date().getFullYear().toString();
+  ['car-yr-sel','car-yr-detail'].forEach(id => {
+    const el = document.getElementById(id); if(!el) return;
+    const prev = el.value || curY;
+    el.innerHTML = [...allYears].sort().reverse().map(y=>`<option value="${y}"${y===prev?' selected':''}>${y}년</option>`).join('');
+    if(!el.value) el.value = curY;
+  });
 
-  document.getElementById('car-s-total').innerHTML = `${totalAmt.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('car-s-expense').innerHTML = `${totalExp.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('car-s-net').innerHTML = `<span style="color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}</span><span class="stat-unit">원</span>`;
-  document.getElementById('car-s-supply').innerHTML = `${totalSupply.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('car-s-vat').innerHTML = `${totalVat.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('car-s-invoice').innerHTML = `${invoiceCnt}<span class="stat-unit">건</span>`;
+  // ── 이번달 요약 카드 ──
+  const now = new Date();
+  const curYM = {y:now.getFullYear(), m:now.getMonth()+1};
+  const mCar = carData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curYM.y&&ym.month===curYM.m; });
+  const mExp = expenseData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curYM.y&&ym.month===curYM.m; });
+  const mIn = mCar.reduce((s,d)=>s+(d.amount||0),0);
+  const mOut = mExp.reduce((s,d)=>s+(d.amount||0),0);
+  const mNet = mIn - mOut;
+  let mVatSale=0, mVatPurchase=0;
+  mCar.forEach(d=>{ if(d.invoice_issued) mVatSale+=(d.amount||0)-Math.round((d.amount||0)/1.1); });
+  mExp.forEach(d=>{ if(d.invoice_received) mVatPurchase+=(d.amount||0)-Math.round((d.amount||0)/1.1); });
+  const mVat = mVatSale - mVatPurchase;
 
-  // 수입 테이블
-  const tbody = document.getElementById('car-tbody');
-  if(!filtered.length){
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>';
-  } else {
-    tbody.innerHTML = filtered.map(d => {
-      const supply = d.invoice_issued ? Math.round((d.amount||0)/1.1) : (d.amount||0);
-      const vat = d.invoice_issued ? (d.amount||0) - supply : 0;
-      const invoiceBadge = d.invoice_issued
-        ? `<span class="badge b-계약완료" style="font-size:11px">발행</span>`
-        : `<span class="badge b-신규" style="font-size:11px;opacity:0.5">미발행</span>`;
-      return `<tr style="line-height:1.8">
-        <td style="font-size:12px;white-space:nowrap">${d.date||'-'}</td>
-        <td style="font-size:12px;color:var(--pu);font-weight:600">${d.category||'-'}</td>
-        <td style="font-size:13px;font-weight:700">${d.car_name||'-'}</td>
-        <td style="font-size:12px;color:var(--tx2)">${d.delivery_date||'-'}</td>
-        <td style="font-family:monospace;font-size:13px;font-weight:700;color:var(--ac)">${(d.amount||0).toLocaleString()}원</td>
-        <td style="font-family:monospace;font-size:12px">${supply.toLocaleString()}원</td>
-        <td style="font-family:monospace;font-size:12px;color:${d.invoice_issued?'var(--am)':'var(--tx3)'}">${d.invoice_issued?vat.toLocaleString()+'원':'-'}</td>
-        <td style="text-align:center">${invoiceBadge}</td>
-        <td style="font-size:12px;color:var(--tx2)">${d.memo||'-'}</td>
-        <td>
-          <button class="btn btn-sm" onclick="openCarModal('${d.id}')" style="margin-bottom:3px">수정</button>
-          <button class="btn btn-sm btn-r" onclick="deleteCarIncome('${d.id}')">삭제</button>
-        </td>
-      </tr>`;
-    }).join('');
-  }
+  // 연간 누적
+  const yCar = carData.filter(d=>getYM(d.date||'').year===curYM.y);
+  const yExp = expenseData.filter(d=>getYM(d.date||'').year===curYM.y);
+  const yIn = yCar.reduce((s,d)=>s+(d.amount||0),0);
+  const yOut = yExp.reduce((s,d)=>s+(d.amount||0),0);
+  const yProfit = yIn - yOut;
+  const invoiceCnt = carData.filter(d=>d.invoice_issued).length;
+  const f = n => n.toLocaleString();
 
-  // 지출 테이블
-  const etbody = document.getElementById('expense-tbody');
-  if(!filteredExp.length){
-    etbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>';
-  } else {
-    etbody.innerHTML = filteredExp.map(d => {
-      const invBadge = d.invoice_received
-        ? `<span class="badge b-계약완료" style="font-size:11px">수취</span>`
-        : `<span class="badge b-신규" style="font-size:11px;opacity:0.5">미수취</span>`;
-      return `<tr style="line-height:1.8">
-      <td style="font-size:12px;white-space:nowrap">${d.date||'-'}</td>
-      <td style="font-size:12px;color:var(--rs);font-weight:600">${d.category||'-'}</td>
-      <td style="font-size:13px;font-weight:700">${d.description||'-'}</td>
-      <td style="font-family:monospace;font-size:13px;font-weight:700;color:var(--rs)">${(d.amount||0).toLocaleString()}원</td>
-      <td style="text-align:center">${invBadge}</td>
-      <td style="font-size:12px;color:var(--tx2)">${d.memo||'-'}</td>
-      <td>
-        <button class="btn btn-sm" onclick="openExpenseModal('${d.id}')" style="margin-bottom:3px">수정</button>
-        <button class="btn btn-sm btn-r" onclick="deleteExpense('${d.id}')">삭제</button>
-      </td>
-    </tr>`;
-    }).join('');
-  }
+  const si = id => document.getElementById(id);
+  if(si('car-s-month-in'))    si('car-s-month-in').innerHTML    = `${f(mIn)}<span class="stat-unit">원</span>`;
+  if(si('car-s-month-lbl'))   si('car-s-month-lbl').textContent = `${curYM.y}년 ${curYM.m}월`;
+  if(si('car-s-vat'))         si('car-s-vat').innerHTML         = `${f(mVat)}<span class="stat-unit">원</span>`;
+  if(si('car-s-vat-sub'))     si('car-s-vat-sub').textContent   = `매출 ${f(mVatSale)} - 매입 ${f(mVatPurchase)}`;
+  if(si('car-s-net'))         si('car-s-net').innerHTML         = `<span style="color:${mNet>=0?'var(--gn)':'var(--rs)'}">${f(mNet)}</span><span class="stat-unit">원</span>`;
+  if(si('car-s-expense'))     si('car-s-expense').innerHTML     = `${f(mOut)}<span class="stat-unit">원</span>`;
+  if(si('car-s-profit'))      si('car-s-profit').innerHTML      = `<span style="color:${mNet>=0?'var(--gn)':'var(--rs)'}">${f(mNet)}</span><span class="stat-unit">원</span>`;
+  if(si('car-s-year-in'))     si('car-s-year-in').innerHTML     = `${f(yIn)}<span class="stat-unit">원</span>`;
+  if(si('car-s-year-lbl'))    si('car-s-year-lbl').textContent  = `${curYM.y}년 누적`;
+  if(si('car-s-year-profit')) si('car-s-year-profit').innerHTML = `<span style="color:${yProfit>=0?'var(--gn)':'var(--rs)'}">${f(yProfit)}</span><span class="stat-unit">원</span>`;
+  if(si('car-s-invoice'))     si('car-s-invoice').innerHTML     = `${invoiceCnt}<span class="stat-unit">건</span>`;
+
+  renderCarMonthlySummary();
+  renderCarDetail();
 
   // 통합현황도 같이 갱신
   if(document.getElementById('page-totalview')?.classList.contains('on')) renderTotalView();
+}
 
-  // ── 월별 요약 + 바차트 ──
-  const monthMap = {};
-  carData.forEach(d => {
-    const ym = (d.date||'').substring(0,7); if(!ym) return;
-    if(!monthMap[ym]) monthMap[ym] = {income:0, supply:0, vat:0, expense:0, invoice:0};
-    monthMap[ym].income += d.amount||0;
-    if(d.invoice_issued){
-      const s = Math.round((d.amount||0)/1.1);
-      monthMap[ym].supply += s;
-      monthMap[ym].vat += (d.amount||0) - s;
-      monthMap[ym].invoice++;
-    } else {
-      monthMap[ym].supply += d.amount||0;
-    }
-  });
-  expenseData.forEach(d => {
-    const ym = (d.date||'').substring(0,7); if(!ym) return;
-    if(!monthMap[ym]) monthMap[ym] = {income:0, supply:0, vat:0, expense:0, invoice:0};
-    monthMap[ym].expense += d.amount||0;
-  });
-  const sortedYms = Object.keys(monthMap).sort().reverse();
-  const mtbody = document.getElementById('car-monthly-tbody');
-  if(mtbody){
-    if(!sortedYms.length){
-      mtbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>';
-    } else {
-      mtbody.innerHTML = sortedYms.map(ym => {
-        const m = monthMap[ym];
-        const net = m.income - m.expense;
-        return `<tr style="line-height:1.8">
-          <td style="font-weight:700">${ym}</td>
-          <td style="font-family:monospace;color:var(--ac);font-weight:700">${m.income.toLocaleString()}원</td>
-          <td style="font-family:monospace;color:var(--tx2)">${m.supply.toLocaleString()}원</td>
-          <td style="font-family:monospace;color:var(--am)">${m.vat?m.vat.toLocaleString()+'원':'-'}</td>
-          <td style="font-family:monospace;color:var(--rs)">${m.expense?m.expense.toLocaleString()+'원':'-'}</td>
-          <td style="font-family:monospace;font-weight:700;color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}원</td>
-          <td style="font-size:12px;color:var(--tx3)">${m.invoice}건</td>
-        </tr>`;
-      }).join('');
-    }
+function renderCarMonthlySummary(){
+  const year = parseInt(document.getElementById('car-yr-sel')?.value || new Date().getFullYear());
+  const f = n => n ? n.toLocaleString() : '—';
+  let cumIn = 0;
+  let tot = {income:0, supply:0, vatSale:0, vatPurchase:0, expense:0, profit:0};
+  const rows = [];
+
+  for(let i=0; i<12; i++){
+    const m = i+1;
+    const mCar = carData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===year&&ym.month===m; });
+    const mExp = expenseData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===year&&ym.month===m; });
+    let income=0, supply=0, vatSale=0, vatPurchase=0, expense=0, iCnt=0;
+    mCar.forEach(d=>{
+      income += d.amount||0;
+      if(d.invoice_issued){
+        const s = Math.round((d.amount||0)/1.1);
+        supply += s; vatSale += (d.amount||0)-s; iCnt++;
+      } else { supply += d.amount||0; }
+    });
+    mExp.forEach(d=>{
+      expense += d.amount||0;
+      if(d.invoice_received) vatPurchase += (d.amount||0)-Math.round((d.amount||0)/1.1);
+    });
+    const vatNet = vatSale - vatPurchase;
+    const profit = income - expense;
+    cumIn += income;
+    tot.income+=income; tot.supply+=supply; tot.vatSale+=vatSale; tot.vatPurchase+=vatPurchase; tot.expense+=expense; tot.profit+=profit;
+    rows.push(`<tr>
+      <td style="font-weight:600">${m}월</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--gn)">${f(income)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2);font-size:12px">${f(supply)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--am);font-size:12px">${vatSale?vatSale.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--gn);font-size:12px">${vatPurchase?'+'+vatPurchase.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--rs);font-weight:700;font-size:12px">${vatNet?vatNet.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--rs)">${f(expense)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${profit>=0?'var(--gn)':'var(--rs)'}">${profit?(profit>=0?'+':'')+profit.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2)">${cumIn?f(cumIn):'—'}</td>
+    </tr>`);
   }
-  // 바차트 (최근 6개월, 오름차순)
-  const chartEl = document.getElementById('car-month-chart');
-  if(chartEl){
-    const chartYms = Object.keys(monthMap).sort().slice(-6);
-    if(!chartYms.length){ chartEl.innerHTML = '<div style="color:var(--tx3);font-size:12px;margin:auto">데이터 없음</div>'; }
-    else {
-      const maxAmt = Math.max(...chartYms.map(ym=>Math.max(monthMap[ym].income, monthMap[ym].expense, 1)));
-      const lbl = document.getElementById('car-chart-label');
-      if(lbl) lbl.textContent = chartYms[0]+' ~ '+chartYms[chartYms.length-1];
-      chartEl.innerHTML = chartYms.map(ym => {
-        const m = monthMap[ym];
-        const net = m.income - m.expense;
-        const hIn = Math.max(Math.round(m.income/maxAmt*100), m.income?2:0);
-        const hOut = Math.max(Math.round(m.expense/maxAmt*100), m.expense?2:0);
-        const hNet = Math.max(Math.round(Math.abs(net)/maxAmt*100), net?2:0);
-        return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:48px">
-          <div style="font-size:9px;color:var(--tx3);font-family:monospace">${Math.round(m.income/10000)}만</div>
-          <div style="display:flex;gap:2px;align-items:flex-end;width:100%;justify-content:center">
-            <div style="width:10px;height:${hIn}px;background:var(--ac);border-radius:3px 3px 0 0" title="수입 ${m.income.toLocaleString()}원"></div>
-            <div style="width:10px;height:${hOut}px;background:var(--rs);border-radius:3px 3px 0 0" title="지출 ${m.expense.toLocaleString()}원"></div>
-            <div style="width:10px;height:${hNet}px;background:${net>=0?'var(--gn)':'var(--rs)'};border-radius:3px 3px 0 0;opacity:0.7" title="순수익 ${net.toLocaleString()}원"></div>
-          </div>
-          <div style="font-size:10px;color:var(--tx3)">${ym.substring(5)}</div>
-        </div>`;
-      }).join('');
-    }
+  const totProfit = tot.income - tot.expense;
+  const totVatNet = tot.vatSale - tot.vatPurchase;
+  const tbody = document.getElementById('car-summary-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = rows.join('') +
+    `<tr class="trow-total"><td>합계</td><td style="color:var(--gn)">${tot.income.toLocaleString()}</td><td>${tot.supply.toLocaleString()}</td><td style="color:var(--am)">${tot.vatSale.toLocaleString()}</td><td style="color:var(--gn)">${tot.vatPurchase?'+'+tot.vatPurchase.toLocaleString():'—'}</td><td style="color:var(--rs);font-weight:800">${totVatNet.toLocaleString()}</td><td style="color:var(--rs)">${tot.expense.toLocaleString()}</td><td style="color:${totProfit>=0?'var(--gn)':'var(--rs)';font-weight:700}">${(totProfit>=0?'+':'')+totProfit.toLocaleString()}</td><td></td></tr>`;
+
+  // 차트 렌더링
+  const chartData = Array.from({length:12},(_,i)=>{
+    const m=i+1;
+    const inc=carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    const out=expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    return {inc, out};
+  });
+  const MN=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const maxIO = Math.max(...chartData.map(d=>Math.max(d.inc,d.out)),1);
+  const maxP  = Math.max(...chartData.map(d=>Math.abs(d.inc-d.out)),1);
+  const revChart = document.getElementById('car-rev-chart');
+  const profChart = document.getElementById('car-profit-chart');
+  if(revChart) revChart.innerHTML = chartData.map((d,i)=>`<div class="chart-col"><div class="cc-bars"><div class="cc-bar" style="height:${Math.round(d.inc/maxIO*90)}px;background:var(--gn)"></div><div class="cc-bar" style="height:${Math.round(d.out/maxIO*90)}px;background:var(--rs)"></div></div><div class="chart-lbl">${MN[i]}</div></div>`).join('');
+  if(profChart){ const p=chartData.map((d,i)=>{const pr=d.inc-d.out;return `<div class="chart-col"><div class="chart-val">${pr?Math.round(pr/10000)+'만':''}</div><div class="chart-bar" style="height:${Math.round(Math.abs(pr)/maxP*90)}px;background:${pr>=0?'var(--ac)':'var(--rs)'}"></div><div class="chart-lbl">${MN[i]}</div></div>`;}).join(''); profChart.innerHTML=p; }
+}
+
+function renderCarDetail(){
+  const year = parseInt(document.getElementById('car-yr-detail')?.value || new Date().getFullYear());
+  const mfBar = document.getElementById('car-mf-bar');
+  if(!mfBar) return;
+  const carMonthFilter = window._carMonthFilter||'전체';
+  const carTypeFilter  = window._carTypeFilter ||'전체';
+  mfBar.innerHTML =
+    `<button class="mfbtn ${carMonthFilter==='전체'?'on':''}" onclick="window._carMonthFilter='전체';renderCarDetail()">전체</button>`+
+    Array.from({length:12},(_,i)=>i+1).map(m=>`<button class="mfbtn ${carMonthFilter===m?'on':''}" onclick="window._carMonthFilter=${m};renderCarDetail()">${m}월</button>`).join('')+
+    `<span style="width:1px;background:var(--bd);margin:0 4px;align-self:stretch;display:inline-block;"></span>`+
+    `<button class="mfbtn ${carTypeFilter==='전체'?'on':''}" onclick="window._carTypeFilter='전체';renderCarDetail()">전체</button>`+
+    `<button class="mfbtn" onclick="window._carTypeFilter='수입';renderCarDetail()" style="${carTypeFilter==='수입'?'background:var(--gnb);border-color:var(--gnbd);color:var(--gn);':''}">💰 수입</button>`+
+    `<button class="mfbtn" onclick="window._carTypeFilter='지출';renderCarDetail()" style="${carTypeFilter==='지출'?'background:var(--rsb);border-color:var(--rsbd);color:var(--rs);':''}">💸 지출</button>`;
+
+  // 수입+지출 합쳐서 리스트 생성
+  let list = [];
+  if(carTypeFilter==='전체'||carTypeFilter==='수입'){
+    carData.filter(d=>getYM(d.date||'').year===year).forEach(d=>{
+      if(carMonthFilter!=='전체'&&getYM(d.date||'').month!==carMonthFilter) return;
+      list.push({...d, _type:'수입'});
+    });
   }
+  if(carTypeFilter==='전체'||carTypeFilter==='지출'){
+    expenseData.filter(d=>getYM(d.date||'').year===year).forEach(d=>{
+      if(carMonthFilter!=='전체'&&getYM(d.date||'').month!==carMonthFilter) return;
+      list.push({...d, _type:'지출'});
+    });
+  }
+  list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  const tbody = document.getElementById('car-detail-tbody');
+  if(!tbody) return;
+  if(!list.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--tx3)">내역이 없습니다</td></tr>'; return; }
+  const f = n => n ? n.toLocaleString() : '—';
+  tbody.innerHTML = list.map(d=>{
+    const isIn = d._type==='수입';
+    const supply = isIn&&d.invoice_issued ? Math.round((d.amount||0)/1.1) : (d.amount||0);
+    const vat    = isIn&&d.invoice_issued ? (d.amount||0)-supply : ((!isIn&&d.invoice_received)?(d.amount||0)-Math.round((d.amount||0)/1.1):0);
+    const invBadge = isIn
+      ? (d.invoice_issued?`<span class="badge b-자금실행완료" style="font-size:10px">발행</span>`:`<span style="font-size:11px;color:var(--tx3)">미발행</span>`)
+      : (d.invoice_received?`<span class="badge b-진행중" style="font-size:10px">수취</span>`:`<span style="font-size:11px;color:var(--tx3)">미수취</span>`);
+    return `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${d.date||'—'}</td>
+      <td style="font-size:11px;color:var(--tx2)">${getYM(d.date||'').month}월</td>
+      <td><span class="badge b-${isIn?'수입':'지출'}">${d._type}</span></td>
+      <td style="font-size:12px;color:var(--tx2)">${isIn?d.category||'—':d.category||'—'}</td>
+      <td style="font-weight:500">${isIn?(d.car_name||'—'):(d.description||'—')}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:600;color:${isIn?'var(--gn)':'var(--rs)'}">${f(d.amount)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx2)">${isIn?(d.invoice_issued?supply.toLocaleString():'—'):'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--am)">${vat?vat.toLocaleString():'—'}</td>
+      <td style="text-align:center">${invBadge}</td>
+      <td style="font-size:11px;color:var(--tx3)">${d.memo||'—'}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="${isIn?`openCarModal('${d.id}')`:`openExpenseModal('${d.id}')`}">✏️</button>
+        <button class="btn btn-sm btn-r" onclick="${isIn?`deleteCarIncome('${d.id}')`:`deleteExpense('${d.id}')`}">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join('');
 }
 
 function renderTotalView(){
-  // 연도 필터 옵션 동적 생성
+  // 연도 셀렉트 동적 생성
   const yearSel = document.getElementById('total-year-filter');
+  if(!yearSel) return;
   const years = new Set();
   [...txList, ...carData, ...expenseData].forEach(d => {
-    const y = (d.date||d.txDate||'').substring(0,4);
-    if(y) years.add(y);
+    const y = (d.date||'').substring(0,4); if(y) years.add(y);
   });
-  const curYear = document.getElementById('total-year-filter')?.value||'';
-  yearSel.innerHTML = '<option value="">전체</option>' + [...years].sort().reverse().map(y=>`<option value="${y}" ${y===curYear?'selected':''}>${y}년</option>`).join('');
+  const curYear = yearSel.value || new Date().getFullYear().toString();
+  yearSel.innerHTML = '<option value="">전체</option>' + [...years].sort().reverse().map(y=>`<option value="${y}"${y===curYear?' selected':''}>${y}년</option>`).join('');
+  const tvYrDetail = document.getElementById('tv-yr-detail');
+  if(tvYrDetail){
+    const prev = tvYrDetail.value || curYear;
+    tvYrDetail.innerHTML = [...years].sort().reverse().map(y=>`<option value="${y}"${y===prev?' selected':''}>${y}년</option>`).join('');
+  }
 
   const yearFilter = yearSel.value;
-  const filterFn = d => {
-    const dt = d.date||d.txDate||'';
-    return !yearFilter || dt.startsWith(yearFilter);
-  };
+  const filterFn = d => { const dt=d.date||''; return !yearFilter||dt.startsWith(yearFilter); };
+  const f = n => n.toLocaleString();
 
-  // 정책자금 수입 (txList에서 계산) - type='수입' 기준, date 필드 사용
-  const policyTx = txList.filter(t => filterFn({date: t.date||''}));
-  let policyIncome = 0;
-  let policyVatSale = 0; // 정책자금 매출부가세
-  policyTx.forEach(tx => {
-    if(tx.type==='수입'){
-      policyIncome += tx.amount||0;
-      policyVatSale += Math.round((tx.amount||0) * 0.1);
-    }
-  });
+  // ── 이번달 기준 카드 ──
+  const now = new Date();
+  const curY = now.getFullYear(), curM = now.getMonth()+1;
+  const mPolicy = txList.filter(t=>{ const ym=getYM(t.date||''); return ym.year===curY&&ym.month===curM&&t.type==='수입'; }).reduce((s,t)=>s+(t.amount||0),0);
+  const mExtra  = carData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curY&&ym.month===curM; }).reduce((s,d)=>s+(d.amount||0),0);
+  const mExp    = expenseData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curY&&ym.month===curM; }).reduce((s,d)=>s+(d.amount||0),0);
+  const mTotal  = mPolicy + mExtra;
+  const mNet    = mTotal - mExp;
 
-  // 자금외 수입/지출
-  const extraIncome = carData.filter(filterFn).reduce((s,d)=>s+(d.amount||0),0);
-  const extraExpense = expenseData.filter(filterFn).reduce((s,d)=>s+(d.amount||0),0);
+  // 연간 누적
+  const yPolicy = txList.filter(t=>getYM(t.date||'').year===curY&&t.type==='수입').reduce((s,t)=>s+(t.amount||0),0);
+  const yExtra  = carData.filter(d=>getYM(d.date||'').year===curY).reduce((s,d)=>s+(d.amount||0),0);
+  const yExp    = expenseData.filter(d=>getYM(d.date||'').year===curY).reduce((s,d)=>s+(d.amount||0),0);
+  const yIn     = yPolicy + yExtra;
+  const yProfit = yIn - yExp;
 
-  // 부가세 계산: 매출부가세 - 매입부가세(계산서 수취) = 실납부액
-  let carVatSale = 0;  // 자금외수입 계산서 발행분 부가세
-  let vatPurchase = 0; // 매입부가세 (지출 계산서 수취분)
-  carData.filter(filterFn).forEach(d => {
-    if(d.invoice_issued) carVatSale += (d.amount||0) - Math.round((d.amount||0)/1.1);
-  });
-  expenseData.filter(filterFn).forEach(d => {
-    if(d.invoice_received) vatPurchase += (d.amount||0) - Math.round((d.amount||0)/1.1);
-  });
-  const totalVatSale = policyVatSale + carVatSale;
-  const totalVatNet = totalVatSale - vatPurchase; // 실납부 부가세
+  // 납부부가세 (이번달)
+  let mVatSale=0, mVatPurchase=0;
+  txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===curY&&ym.month===curM&&t.type==='수입';}).forEach(t=>{ mVatSale+=Math.round((t.amount||0)*0.1); });
+  carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===curY&&ym.month===curM;}).forEach(d=>{ if(d.invoice_issued) mVatSale+=(d.amount||0)-Math.round((d.amount||0)/1.1); });
+  expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===curY&&ym.month===curM;}).forEach(d=>{ if(d.invoice_received) mVatPurchase+=(d.amount||0)-Math.round((d.amount||0)/1.1); });
+  const mVat = mVatSale - mVatPurchase;
 
-  const totalIncome = policyIncome + extraIncome;
-  const net = totalIncome - extraExpense;
+  const si = id => document.getElementById(id);
+  if(si('tv-policy'))       si('tv-policy').innerHTML       = `${f(mPolicy)}<span class="stat-unit">원</span>`;
+  if(si('tv-month-lbl'))    si('tv-month-lbl').textContent  = `${curY}년 ${curM}월`;
+  if(si('tv-extra'))        si('tv-extra').innerHTML        = `${f(mExtra)}<span class="stat-unit">원</span>`;
+  if(si('tv-total-income')) si('tv-total-income').innerHTML = `${f(mTotal)}<span class="stat-unit">원</span>`;
+  if(si('tv-total-expense'))si('tv-total-expense').innerHTML= `${f(mExp)}<span class="stat-unit">원</span>`;
+  if(si('tv-net'))          si('tv-net').innerHTML          = `<span style="color:${mNet>=0?'var(--gn)':'var(--rs)'}">${f(mNet)}</span><span class="stat-unit">원</span>`;
+  if(si('tv-year-in'))      si('tv-year-in').innerHTML      = `${f(yIn)}<span class="stat-unit">원</span>`;
+  if(si('tv-year-lbl'))     si('tv-year-lbl').textContent   = `${curY}년 누적`;
+  if(si('tv-year-profit'))  si('tv-year-profit').innerHTML  = `<span style="color:${yProfit>=0?'var(--gn)':'var(--rs)'}">${f(yProfit)}</span><span class="stat-unit">원</span>`;
+  if(si('tv-vat'))          si('tv-vat').innerHTML          = `${f(mVat)}<span class="stat-unit">원</span>`;
 
-  document.getElementById('tv-policy').innerHTML = `${policyIncome.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('tv-extra').innerHTML = `${extraIncome.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('tv-total-income').innerHTML = `${totalIncome.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('tv-total-expense').innerHTML = `${extraExpense.toLocaleString()}<span class="stat-unit">원</span>`;
-  document.getElementById('tv-net').innerHTML = `<span style="color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}</span><span class="stat-unit">원</span>`;
-  // 부가세: 납부액 표시 (매출부가세 - 매입부가세)
-  const vatEl = document.getElementById('tv-vat');
-  if(vatEl) vatEl.innerHTML = `${totalVatNet.toLocaleString()}<span class="stat-unit">원</span><div style="font-size:10px;color:var(--tx3);margin-top:2px">매출 ${totalVatSale.toLocaleString()} - 매입 ${vatPurchase.toLocaleString()}</div>`;
-
-  // 월별 요약
-  const months = {};
-  const addMonth = (ym, key, amt) => {
-    if(!months[ym]) months[ym] = {policy:0, extra:0, expense:0, vatSale:0, vatPurchase:0};
-    months[ym][key] += amt;
-  };
-
-  // 정책자금: date 필드 사용
-  policyTx.forEach(tx => {
-    if(tx.type!=='수입') return;
-    const ym = (tx.date||'').substring(0,7);
-    if(ym){
-      addMonth(ym, 'policy', tx.amount||0);
-      addMonth(ym, 'vatSale', Math.round((tx.amount||0)*0.1));
-    }
-  });
-  carData.filter(filterFn).forEach(d => {
-    const ym = (d.date||'').substring(0,7);
-    if(ym){
-      addMonth(ym, 'extra', d.amount||0);
-      if(d.invoice_issued) addMonth(ym, 'vatSale', (d.amount||0) - Math.round((d.amount||0)/1.1));
-    }
-  });
-  expenseData.filter(filterFn).forEach(d => {
-    const ym = (d.date||'').substring(0,7);
-    if(ym){
-      addMonth(ym, 'expense', d.amount||0);
-      if(d.invoice_received) addMonth(ym, 'vatPurchase', (d.amount||0) - Math.round((d.amount||0)/1.1));
-    }
-  });
-
-  const tbody = document.getElementById('tv-tbody');
-  const sortedMonths = Object.keys(months).sort().reverse();
-  if(!sortedMonths.length){
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>';
-    return;
+  // ── 월별 요약 테이블 ──
+  const year = parseInt(yearSel.value || curY);
+  let cumIn = 0;
+  let tot = {policy:0, extra:0, expense:0, vatSale:0, vatPurchase:0};
+  const rows = [];
+  for(let i=0; i<12; i++){
+    const m = i+1;
+    const mPol = txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='수입';}).reduce((s,t)=>s+(t.amount||0),0);
+    const mExt = carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    const mEx  = expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    let vSale=0, vPurchase=0;
+    txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='수입';}).forEach(t=>vSale+=Math.round((t.amount||0)*0.1));
+    carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).forEach(d=>{ if(d.invoice_issued) vSale+=(d.amount||0)-Math.round((d.amount||0)/1.1); });
+    expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).forEach(d=>{ if(d.invoice_received) vPurchase+=(d.amount||0)-Math.round((d.amount||0)/1.1); });
+    const total=mPol+mExt, net=total-mEx, vatNet=vSale-vPurchase;
+    cumIn+=total;
+    tot.policy+=mPol; tot.extra+=mExt; tot.expense+=mEx; tot.vatSale+=vSale; tot.vatPurchase+=vPurchase;
+    rows.push(`<tr>
+      <td style="font-weight:600">${m}월</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--ac)">${mPol?mPol.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--pu)">${mExt?mExt.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--gn)">${total?total.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--rs)">${mEx?mEx.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${net>=0?'var(--gn)':'var(--rs)'}">${net?(net>=0?'+':'')+net.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--am);font-size:12px">${vatNet?vatNet.toLocaleString():'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2)">${cumIn?cumIn.toLocaleString():'—'}</td>
+    </tr>`);
   }
-  tbody.innerHTML = sortedMonths.map(ym => {
-    const m = months[ym];
-    const total = m.policy + m.extra;
-    const net = total - m.expense;
-    const vatNet = (m.vatSale||0) - (m.vatPurchase||0);
-    return `<tr style="line-height:1.8">
-      <td style="font-weight:700;font-size:13px">${ym}</td>
-      <td style="font-family:monospace;color:var(--ac)">${m.policy.toLocaleString()}원</td>
-      <td style="font-family:monospace;color:var(--pu)">${m.extra.toLocaleString()}원</td>
-      <td style="font-family:monospace;font-weight:700;color:var(--gn)">${total.toLocaleString()}원</td>
-      <td style="font-family:monospace;color:var(--rs)">${m.expense.toLocaleString()}원</td>
-      <td style="font-family:monospace;font-weight:700;color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}원</td>
-      <td style="font-family:monospace;color:var(--am)">${vatNet?vatNet.toLocaleString()+'원':'-'}</td>
-    </tr>`;
-  }).join('');
+  const totTotal=tot.policy+tot.extra, totNet=totTotal-tot.expense, totVat=tot.vatSale-tot.vatPurchase;
+  const tbody = document.getElementById('tv-tbody');
+  if(tbody) tbody.innerHTML = rows.join('')+
+    `<tr class="trow-total"><td>합계</td><td style="color:var(--ac)">${tot.policy.toLocaleString()}</td><td style="color:var(--pu)">${tot.extra.toLocaleString()}</td><td style="color:var(--gn);font-weight:800">${totTotal.toLocaleString()}</td><td style="color:var(--rs)">${tot.expense.toLocaleString()}</td><td style="color:${totNet>=0?'var(--gn)':'var(--rs)'};font-weight:800">${(totNet>=0?'+':'')+totNet.toLocaleString()}</td><td style="color:var(--am);font-weight:800">${totVat.toLocaleString()}</td><td></td></tr>`;
+
+  // ── 차트 ──
+  const chartData = Array.from({length:12},(_,i)=>{
+    const m=i+1;
+    const pol=txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='수입';}).reduce((s,t)=>s+(t.amount||0),0);
+    const ext=carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    const out=expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    return {inc:pol+ext, out};
+  });
+  const MN=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const maxIO=Math.max(...chartData.map(d=>Math.max(d.inc,d.out)),1);
+  const maxP =Math.max(...chartData.map(d=>Math.abs(d.inc-d.out)),1);
+  const tvRev=document.getElementById('tv-rev-chart');
+  const tvProf=document.getElementById('tv-profit-chart');
+  if(tvRev) tvRev.innerHTML=chartData.map((d,i)=>`<div class="chart-col"><div class="cc-bars"><div class="cc-bar" style="height:${Math.round(d.inc/maxIO*90)}px;background:var(--gn)"></div><div class="cc-bar" style="height:${Math.round(d.out/maxIO*90)}px;background:var(--rs)"></div></div><div class="chart-lbl">${MN[i]}</div></div>`).join('');
+  if(tvProf){ const p=chartData.map((d,i)=>{const pr=d.inc-d.out;return `<div class="chart-col"><div class="chart-val">${pr?Math.round(pr/10000)+'만':''}</div><div class="chart-bar" style="height:${Math.round(Math.abs(pr)/maxP*90)}px;background:${pr>=0?'var(--ac)':'var(--rs)'}"></div><div class="chart-lbl">${MN[i]}</div></div>`;}).join(''); tvProf.innerHTML=p; }
+
+  renderTotalDetail();
+}
+
+function renderTotalDetail(){
+  const year = parseInt(document.getElementById('tv-yr-detail')?.value || new Date().getFullYear());
+  const mfBar = document.getElementById('tv-mf-bar');
+  if(!mfBar) return;
+  const tvMonthFilter = window._tvMonthFilter||'전체';
+  const tvTypeFilter  = window._tvTypeFilter ||'전체';
+  mfBar.innerHTML =
+    `<button class="mfbtn ${tvMonthFilter==='전체'?'on':''}" onclick="window._tvMonthFilter='전체';renderTotalDetail()">전체</button>`+
+    Array.from({length:12},(_,i)=>i+1).map(m=>`<button class="mfbtn ${tvMonthFilter===m?'on':''}" onclick="window._tvMonthFilter=${m};renderTotalDetail()">${m}월</button>`).join('')+
+    `<span style="width:1px;background:var(--bd);margin:0 4px;align-self:stretch;display:inline-block;"></span>`+
+    `<button class="mfbtn ${tvTypeFilter==='전체'?'on':''}" onclick="window._tvTypeFilter='전체';renderTotalDetail()">전체</button>`+
+    `<button class="mfbtn" onclick="window._tvTypeFilter='정책자금';renderTotalDetail()" style="${tvTypeFilter==='정책자금'?'background:var(--acb);border-color:var(--acbd);color:var(--ac);':''}">📋 정책자금</button>`+
+    `<button class="mfbtn" onclick="window._tvTypeFilter='자금외수입';renderTotalDetail()" style="${tvTypeFilter==='자금외수입'?'background:var(--pub);border-color:var(--pubd);color:var(--pu);':''}">💰 자금외</button>`+
+    `<button class="mfbtn" onclick="window._tvTypeFilter='지출';renderTotalDetail()" style="${tvTypeFilter==='지출'?'background:var(--rsb);border-color:var(--rsbd);color:var(--rs);':''}">💸 지출</button>`;
+
+  let list = [];
+  const inMonth = d => tvMonthFilter==='전체' || getYM(d.date||'').month===tvMonthFilter;
+  if(tvTypeFilter==='전체'||tvTypeFilter==='정책자금')
+    txList.filter(t=>getYM(t.date||'').year===year&&inMonth(t)).forEach(t=>list.push({date:t.date,_src:'정책자금',_type:t.type,_name:t.item,amount:t.amount,vat:t.type==='수입'?Math.round(t.amount*0.1):0,note:t.note,_id:t.id,_isTx:true}));
+  if(tvTypeFilter==='전체'||tvTypeFilter==='자금외수입')
+    carData.filter(d=>getYM(d.date||'').year===year&&inMonth(d)).forEach(d=>{ const s=d.invoice_issued?(d.amount||0)-Math.round((d.amount||0)/1.1):0; list.push({date:d.date,_src:'자금외',_type:'수입',_name:d.car_name||d.category||'-',amount:d.amount||0,vat:s,note:d.memo,_id:d.id,_isCar:true}); });
+  if(tvTypeFilter==='전체'||tvTypeFilter==='지출')
+    expenseData.filter(d=>getYM(d.date||'').year===year&&inMonth(d)).forEach(d=>{ const s=d.invoice_received?(d.amount||0)-Math.round((d.amount||0)/1.1):0; list.push({date:d.date,_src:'자금외',_type:'지출',_name:d.description||d.category||'-',amount:d.amount||0,vat:s,note:d.memo,_id:d.id,_isExp:true}); });
+  list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  const tbody = document.getElementById('tv-detail-tbody');
+  if(!tbody) return;
+  if(!list.length){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--tx3)">내역이 없습니다</td></tr>'; return; }
+  const f = n => n ? n.toLocaleString() : '—';
+  tbody.innerHTML = list.map(d=>`<tr>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${d.date||'—'}</td>
+    <td style="font-size:11px;color:var(--tx2)">${getYM(d.date||'').month}월</td>
+    <td><span class="badge b-${d._type}">${d._type}</span></td>
+    <td style="font-size:11px"><span style="background:${d._src==='정책자금'?'var(--acb)':'var(--pub)'};color:${d._src==='정책자금'?'var(--ac)':'var(--pu)'};padding:2px 7px;border-radius:100px;font-size:10px;font-weight:600">${d._src}</span></td>
+    <td style="font-weight:500">${d._name}</td>
+    <td style="font-family:'JetBrains Mono',monospace;font-weight:600;color:${d._type==='지출'?'var(--rs)':'var(--gn)'}">${f(d.amount)}</td>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--am)">${d.vat?d.vat.toLocaleString():'—'}</td>
+    <td style="font-size:11px;color:var(--tx3)">${d.note||'—'}</td>
+    <td><div style="display:flex;gap:4px">
+      ${d._isTx?`<button class="btn btn-sm" onclick="openTxModal('${d._id}')">✏️</button>`:''}
+      ${d._isCar?`<button class="btn btn-sm" onclick="openCarModal('${d._id}')">✏️</button><button class="btn btn-sm btn-r" onclick="deleteCarIncome('${d._id}')">🗑️</button>`:''}
+      ${d._isExp?`<button class="btn btn-sm" onclick="openExpenseModal('${d._id}')">✏️</button><button class="btn btn-sm btn-r" onclick="deleteExpense('${d._id}')">🗑️</button>`:''}
+    </div></td>
+  </tr>`).join('');
 }
 </script>
 
