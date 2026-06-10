@@ -3523,16 +3523,18 @@ function renderTotalView(){
   // ── 이번달 기준 카드 ──
   const now = new Date();
   const curY = now.getFullYear(), curM = now.getMonth()+1;
-  const mPolicy = txList.filter(t=>{ const ym=getYM(t.date||''); return ym.year===curY&&ym.month===curM&&t.type==='수입'; }).reduce((s,t)=>s+(t.amount||0),0);
-  const mExtra  = carData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curY&&ym.month===curM; }).reduce((s,d)=>s+(d.amount||0),0);
-  const mExp    = expenseData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curY&&ym.month===curM; }).reduce((s,d)=>s+(d.amount||0),0);
-  const mTotal  = mPolicy + mExtra;
-  const mNet    = mTotal - mExp;
+  const mPolicy  = txList.filter(t=>{ const ym=getYM(t.date||''); return ym.year===curY&&ym.month===curM&&t.type==='수입'; }).reduce((s,t)=>s+(t.amount||0),0);
+  const mTxOut   = txList.filter(t=>{ const ym=getYM(t.date||''); return ym.year===curY&&ym.month===curM&&t.type==='지출'; }).reduce((s,t)=>s+(t.amount||0),0);
+  const mExtra   = carData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curY&&ym.month===curM; }).reduce((s,d)=>s+(d.amount||0),0);
+  const mExp     = expenseData.filter(d=>{ const ym=getYM(d.date||''); return ym.year===curY&&ym.month===curM; }).reduce((s,d)=>s+(d.amount||0),0) + mTxOut;
+  const mTotal   = mPolicy + mExtra;
+  const mNet     = mTotal - mExp;
 
   // 연간 누적
   const yPolicy = txList.filter(t=>getYM(t.date||'').year===curY&&t.type==='수입').reduce((s,t)=>s+(t.amount||0),0);
+  const yTxOut  = txList.filter(t=>getYM(t.date||'').year===curY&&t.type==='지출').reduce((s,t)=>s+(t.amount||0),0);
   const yExtra  = carData.filter(d=>getYM(d.date||'').year===curY).reduce((s,d)=>s+(d.amount||0),0);
-  const yExp    = expenseData.filter(d=>getYM(d.date||'').year===curY).reduce((s,d)=>s+(d.amount||0),0);
+  const yExp    = expenseData.filter(d=>getYM(d.date||'').year===curY).reduce((s,d)=>s+(d.amount||0),0) + yTxOut;
   const yIn     = yPolicy + yExtra;
   const yProfit = yIn - yExp;
 
@@ -3563,8 +3565,9 @@ function renderTotalView(){
   for(let i=0; i<12; i++){
     const m = i+1;
     const mPol = txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='수입';}).reduce((s,t)=>s+(t.amount||0),0);
+    const mTxOut = txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='지출';}).reduce((s,t)=>s+(t.amount||0),0);
     const mExt = carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
-    const mEx  = expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    const mEx  = expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0) + mTxOut;
     let vSale=0, vPurchase=0;
     txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='수입';}).forEach(t=>vSale+=Math.round((t.amount||0)*0.1));
     carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).forEach(d=>{ if(d.invoice_issued) vSale+=(d.amount||0)-Math.round((d.amount||0)/1.1); });
@@ -3592,8 +3595,9 @@ function renderTotalView(){
   const chartData = Array.from({length:12},(_,i)=>{
     const m=i+1;
     const pol=txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='수입';}).reduce((s,t)=>s+(t.amount||0),0);
+    const txOut=txList.filter(t=>{const ym=getYM(t.date||'');return ym.year===year&&ym.month===m&&t.type==='지출';}).reduce((s,t)=>s+(t.amount||0),0);
     const ext=carData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
-    const out=expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0);
+    const out=expenseData.filter(d=>{const ym=getYM(d.date||'');return ym.year===year&&ym.month===m;}).reduce((s,d)=>s+(d.amount||0),0)+txOut;
     return {inc:pol+ext, out};
   });
   const MN=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
@@ -3626,7 +3630,9 @@ function renderTotalDetail(){
   let list = [];
   const inMonth = d => tvMonthFilter==='전체' || getYM(d.date||'').month===tvMonthFilter;
   if(tvTypeFilter==='전체'||tvTypeFilter==='정책자금')
-    txList.filter(t=>getYM(t.date||'').year===year&&inMonth(t)).forEach(t=>list.push({date:t.date,_src:'정책자금',_type:t.type,_name:t.item,amount:t.amount,vat:t.type==='수입'?Math.round(t.amount*0.1):0,note:t.note,_id:t.id,_isTx:true}));
+    txList.filter(t=>getYM(t.date||'').year===year&&inMonth(t)&&t.type==='수입').forEach(t=>list.push({date:t.date,_src:'정책자금',_type:'수입',_name:t.item,amount:t.amount,vat:Math.round(t.amount*0.1),note:t.note,_id:t.id,_isTx:true}));
+  if(tvTypeFilter==='전체'||tvTypeFilter==='지출')
+    txList.filter(t=>getYM(t.date||'').year===year&&inMonth(t)&&t.type==='지출').forEach(t=>list.push({date:t.date,_src:'정책자금',_type:'지출',_name:t.item,amount:t.amount,vat:t.taxInvoice?Math.round(t.amount*0.1):0,note:t.note,_id:t.id,_isTx:true}));
   if(tvTypeFilter==='전체'||tvTypeFilter==='자금외수입')
     carData.filter(d=>getYM(d.date||'').year===year&&inMonth(d)).forEach(d=>{ const s=d.invoice_issued?(d.amount||0)-Math.round((d.amount||0)/1.1):0; list.push({date:d.date,_src:'자금외',_type:'수입',_name:d.car_name||d.category||'-',amount:d.amount||0,vat:s,note:d.memo,_id:d.id,_isCar:true}); });
   if(tvTypeFilter==='전체'||tvTypeFilter==='지출')
