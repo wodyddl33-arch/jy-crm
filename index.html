@@ -2693,7 +2693,9 @@ function getDbCountByDate(dateStr){
   const src = allLandingData.length ? allLandingData : landingData;
   if(!src.length) return 0;
   return src.filter(r => {
-    const kst = new Date(new Date(r.created_at).getTime() + 9*60*60*1000);
+    // created_at이 UTC임을 명시 (Z 붙여서 파싱)
+    const utcStr = r.created_at.includes('Z') ? r.created_at : r.created_at + 'Z';
+    const kst = new Date(new Date(utcStr).getTime() + 9*60*60*1000);
     const ds = `${kst.getUTCFullYear()}-${String(kst.getUTCMonth()+1).padStart(2,'0')}-${String(kst.getUTCDate()).padStart(2,'0')}`;
     return ds === dateStr;
   }).length;
