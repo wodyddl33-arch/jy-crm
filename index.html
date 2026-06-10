@@ -881,9 +881,14 @@ function goPage(id, btn) {
   if(id === 'totalview') fetchCarIncome().then(()=>renderTotalView());
 }
 function goSubPage(id, btn) {
-  document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('on'));
-  document.getElementById(id).classList.add('on');
+  const targetEl = document.getElementById(id);
+  if(!targetEl) return;
+  const parentPage = targetEl.closest('.page');
+  if(parentPage){
+    parentPage.querySelectorAll('.subpage').forEach(p=>p.classList.remove('on'));
+    parentPage.querySelectorAll('.stab').forEach(t=>t.classList.remove('on'));
+  }
+  targetEl.classList.add('on');
   btn.classList.add('on');
 }
 
@@ -3319,6 +3324,8 @@ function renderCarIncome(){
     const el = document.getElementById(id); if(!el) return;
     const prev = el.value || curY;
     el.innerHTML = [...allYears].sort().reverse().map(y=>`<option value="${y}"${y===prev?' selected':''}>${y}년</option>`).join('');
+    // 데이터 없으면 현재연도 옵션 강제 추가
+    if(!el.innerHTML) el.innerHTML = `<option value="${curY}">${curY}년</option>`;
     if(!el.value) el.value = curY;
   });
 
@@ -3365,7 +3372,8 @@ function renderCarIncome(){
 }
 
 function renderCarMonthlySummary(){
-  const year = parseInt(document.getElementById('car-yr-sel')?.value || new Date().getFullYear());
+  const yearRaw = document.getElementById('car-yr-sel')?.value;
+  const year = parseInt(yearRaw) || new Date().getFullYear();
   const f = n => n ? n.toLocaleString() : '—';
   let cumIn = 0;
   let tot = {income:0, supply:0, vatSale:0, vatPurchase:0, expense:0, profit:0};
@@ -3427,7 +3435,8 @@ function renderCarMonthlySummary(){
 }
 
 function renderCarDetail(){
-  const year = parseInt(document.getElementById('car-yr-detail')?.value || new Date().getFullYear());
+  const yearRaw = document.getElementById('car-yr-detail')?.value;
+  const year = parseInt(yearRaw) || new Date().getFullYear();
   const mfBar = document.getElementById('car-mf-bar');
   if(!mfBar) return;
   const carMonthFilter = window._carMonthFilter||'전체';
@@ -3594,7 +3603,8 @@ function renderTotalView(){
 }
 
 function renderTotalDetail(){
-  const year = parseInt(document.getElementById('tv-yr-detail')?.value || new Date().getFullYear());
+  const yearRaw = document.getElementById('tv-yr-detail')?.value;
+  const year = parseInt(yearRaw) || new Date().getFullYear();
   const mfBar = document.getElementById('tv-mf-bar');
   if(!mfBar) return;
   const tvMonthFilter = window._tvMonthFilter||'전체';
