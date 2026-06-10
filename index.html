@@ -148,6 +148,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
 <button class="ntab" onclick="goPage('landing',this)">랜딩 접수 <span class="nbadge" id="badge-landing">0</span></button>
 <button class="ntab" onclick="goPage('trash',this)">🗑️ 휴지통 <span class="nbadge" id="badge-trash">0</span></button>
 <button class="ntab" onclick="goPage('adstats',this)">📊 광고 성과</button>
+<button class="ntab" id="tab-carincome" onclick="goPage('carincome',this)">🚗 자동차 수입</button>
 </div>
 
 <div class="main">
@@ -833,6 +834,9 @@ function applyGuestMode(){
   // 상단 우측 버튼 전체 숨김
   const topbarR=document.querySelector('.topbar-r');
   if(topbarR) topbarR.style.display='none';
+  // 자동차 수입 탭 숨김 (어드민 전용)
+  const tabCar = document.getElementById('tab-carincome');
+  if(tabCar) tabCar.style.display='none';
 }
 
 window.addEventListener('load', async () => {
@@ -866,7 +870,8 @@ function goPage(id, btn) {
   btn.classList.add('on');
   if(id === 'landing') fetchLandingData();
   if(id === 'trash') fetchTrashData();
-  if(id === 'adstats') fetchLandingData();
+  if(id === 'adstats') fetchAllLandingForAd();
+  if(id === 'carincome') fetchCarIncome();
 }
 function goSubPage(id, btn) {
   document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('on'));
@@ -2165,6 +2170,96 @@ async function importXlsx(input){
   </div>
 </div>
 
+<!-- 자동차 수입 페이지 (어드민 전용) -->
+<div id="page-carincome" class="page">
+  <div class="filter-bar" style="margin-bottom:16px">
+    <span style="font-size:13px;font-weight:700;color:var(--tx)">🚗 자동차 수입 관리</span>
+    <select class="sort-sel" id="car-period-filter" onchange="renderCarIncome()">
+      <option value="">전체 기간</option>
+      <option value="3">최근 3개월</option>
+      <option value="6">최근 6개월</option>
+      <option value="12">올해</option>
+    </select>
+    <button class="btn btn-p" onclick="openCarModal()">+ 수입 등록</button>
+    <button class="btn" onclick="fetchCarIncome()">🔄 새로고침</button>
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="stats stats-4" style="margin-bottom:20px">
+    <div class="stat c-ac"><div class="stat-lbl">총 수입</div><div class="stat-val" id="car-s-total">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-gn"><div class="stat-lbl">공급가액 합계</div><div class="stat-val" id="car-s-supply">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-am"><div class="stat-lbl">부가세 합계</div><div class="stat-val" id="car-s-vat">0<span class="stat-unit">원</span></div></div>
+    <div class="stat c-pu"><div class="stat-lbl">계산서 발행</div><div class="stat-val" id="car-s-invoice">0<span class="stat-unit">건</span></div></div>
+  </div>
+
+  <!-- 테이블 -->
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:90px">날짜</th>
+          <th style="width:130px">차량명</th>
+          <th style="width:100px">출고일</th>
+          <th style="width:110px">수입금액</th>
+          <th style="width:110px">공급가액</th>
+          <th style="width:90px">부가세</th>
+          <th style="width:80px">계산서</th>
+          <th>메모</th>
+          <th style="width:60px"></th>
+        </tr>
+      </thead>
+      <tbody id="car-tbody">
+        <tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 자동차 수입 등록 모달 -->
+<div class="overlay" id="carModal">
+  <div class="modal modal-sm">
+    <div class="modal-hd">
+      <span class="modal-title" id="car-modal-title">🚗 수입 등록</span>
+      <button class="modal-close" onclick="closeCarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row2">
+        <div class="field"><label>날짜</label><input type="date" id="car-inp-date"></div>
+        <div class="field"><label>출고일</label><input type="date" id="car-inp-delivery"></div>
+      </div>
+      <div class="field"><label>차량명</label><input type="text" id="car-inp-name" placeholder="예: 아반떼 CN7 2024"></div>
+      <div class="row2">
+        <div class="field">
+          <label>수입금액 (원)</label>
+          <input type="number" id="car-inp-amount" placeholder="0" oninput="calcCarVat()">
+        </div>
+        <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:22px">
+          <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="car-inp-invoice" onchange="calcCarVat()" style="width:16px;height:16px">
+            <span style="font-size:13px">계산서 발행</span>
+          </label>
+        </div>
+      </div>
+      <!-- 부가세 미리보기 -->
+      <div id="car-vat-preview" style="display:none;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--tx2)">공급가액</span>
+          <span id="car-preview-supply" style="color:var(--tx);font-weight:700">-</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--tx2)">부가세 (10%)</span>
+          <span id="car-preview-vat" style="color:var(--am);font-weight:700">-</span>
+        </div>
+      </div>
+      <div class="field"><label>메모</label><input type="text" id="car-inp-memo" placeholder="예: 김철수 고객, 현금수령 등"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeCarModal()">취소</button>
+      <button class="btn btn-p" onclick="saveCarIncome()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- 광고 성과 페이지 -->
 <div id="page-adstats" class="page">
   <div class="filter-bar" style="margin-bottom:16px">
@@ -2256,9 +2351,21 @@ const LANDING_URL = 'https://lxascfdyqxywzvwmldhs.supabase.co';
 const LANDING_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4YXNjZmR5cXh5d3p2d21sZGhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMzg1ODYsImV4cCI6MjA5NDkxNDU4Nn0.g2sTSJNGOJ4ZkYhoM1sNJOX31EanmTb_r3bRyjtlPzg';
 let landingData = [];
 
+let allLandingData = []; // 광고 성과 DB수 계산용 (삭제/휴지통 포함 전체)
+
+async function fetchAllLandingForAd() {
+  try {
+    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?order=created_at.desc&limit=1000', {
+      headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
+    });
+    allLandingData = await res.json();
+    if(document.getElementById('page-adstats')?.classList.contains('on')) renderAdStats();
+  } catch(e) { console.error('전체 랜딩 데이터 로드 실패', e); }
+}
+
 async function fetchLandingData() {
   try {
-    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?order=created_at.desc&is_deleted=eq.false', {
+    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries?order=created_at.desc&is_deleted=eq.false&limit=1000', {
       headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
     });
     landingData = await res.json();
@@ -2583,9 +2690,9 @@ function saveAdInput(){
 }
 
 function getDbCountByDate(dateStr){
-  if(!landingData || !landingData.length) return 0;
-  return landingData.filter(r => {
-    // 한국 시간(KST = UTC+9) 기준 날짜
+  const src = allLandingData.length ? allLandingData : landingData;
+  if(!src.length) return 0;
+  return src.filter(r => {
     const kst = new Date(new Date(r.created_at).getTime() + 9*60*60*1000);
     const ds = `${kst.getUTCFullYear()}-${String(kst.getUTCMonth()+1).padStart(2,'0')}-${String(kst.getUTCDate()).padStart(2,'0')}`;
     return ds === dateStr;
@@ -2743,6 +2850,162 @@ function parseAdRows(rows){
   saveAdData();
   renderAdStats();
   alert(`${added}건 업로드 완료!`);
+}
+</script>
+
+<script>
+// ========== 자동차 수입 ==========
+let carData = [];
+let carEditId = null;
+
+async function fetchCarIncome(){
+  try {
+    const res = await fetch(LANDING_URL+'/rest/v1/car_income?order=date.desc&limit=1000', {
+      headers: { 'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY }
+    });
+    carData = await res.json();
+    renderCarIncome();
+  } catch(e){ console.error('자동차 수입 로드 실패', e); }
+}
+
+function calcCarVat(){
+  const amt = parseInt(document.getElementById('car-inp-amount').value)||0;
+  const inv = document.getElementById('car-inp-invoice').checked;
+  const preview = document.getElementById('car-vat-preview');
+  if(inv && amt){
+    const supply = Math.round(amt/1.1);
+    const vat = amt - supply;
+    document.getElementById('car-preview-supply').textContent = supply.toLocaleString()+'원';
+    document.getElementById('car-preview-vat').textContent = vat.toLocaleString()+'원';
+    preview.style.display='block';
+  } else {
+    preview.style.display='none';
+  }
+}
+
+function openCarModal(id){
+  carEditId = id || null;
+  document.getElementById('car-modal-title').textContent = id ? '🚗 수입 수정' : '🚗 수입 등록';
+  if(id){
+    const r = carData.find(d=>d.id===id);
+    if(!r) return;
+    document.getElementById('car-inp-date').value = r.date||'';
+    document.getElementById('car-inp-delivery').value = r.delivery_date||'';
+    document.getElementById('car-inp-name').value = r.car_name||'';
+    document.getElementById('car-inp-amount').value = r.amount||'';
+    document.getElementById('car-inp-invoice').checked = r.invoice_issued||false;
+    document.getElementById('car-inp-memo').value = r.memo||'';
+  } else {
+    document.getElementById('car-inp-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('car-inp-delivery').value = '';
+    document.getElementById('car-inp-name').value = '';
+    document.getElementById('car-inp-amount').value = '';
+    document.getElementById('car-inp-invoice').checked = false;
+    document.getElementById('car-inp-memo').value = '';
+  }
+  calcCarVat();
+  document.getElementById('carModal').classList.add('on');
+}
+
+function closeCarModal(){
+  document.getElementById('carModal').classList.remove('on');
+  carEditId = null;
+}
+
+async function saveCarIncome(){
+  const date = document.getElementById('car-inp-date').value;
+  if(!date){ alert('날짜를 입력해주세요.'); return; }
+  const payload = {
+    date,
+    delivery_date: document.getElementById('car-inp-delivery').value || null,
+    car_name: document.getElementById('car-inp-name').value.trim(),
+    amount: parseInt(document.getElementById('car-inp-amount').value)||0,
+    invoice_issued: document.getElementById('car-inp-invoice').checked,
+    memo: document.getElementById('car-inp-memo').value.trim()
+  };
+  try {
+    if(carEditId){
+      await fetch(LANDING_URL+'/rest/v1/car_income?id=eq.'+carEditId, {
+        method:'PATCH',
+        headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      await fetch(LANDING_URL+'/rest/v1/car_income', {
+        method:'POST',
+        headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+    }
+    closeCarModal();
+    fetchCarIncome();
+  } catch(e){ alert('저장 실패: '+e.message); }
+}
+
+async function deleteCarIncome(id){
+  if(!confirm('삭제하시겠습니까?')) return;
+  await fetch(LANDING_URL+'/rest/v1/car_income?id=eq.'+id, {
+    method:'DELETE',
+    headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }
+  });
+  fetchCarIncome();
+}
+
+function renderCarIncome(){
+  const periodFilter = parseInt(document.getElementById('car-period-filter')?.value||'0');
+  const now = new Date();
+  let filtered = carData.filter(d => {
+    if(!periodFilter) return true;
+    const diff = (now - new Date(d.date)) / (1000*60*60*24*30);
+    return diff <= periodFilter;
+  });
+
+  // 요약 카드
+  let totalAmt=0, totalSupply=0, totalVat=0, invoiceCnt=0;
+  filtered.forEach(d => {
+    totalAmt += d.amount||0;
+    if(d.invoice_issued){
+      const supply = Math.round((d.amount||0)/1.1);
+      const vat = (d.amount||0) - supply;
+      totalSupply += supply;
+      totalVat += vat;
+      invoiceCnt++;
+    } else {
+      totalSupply += d.amount||0;
+    }
+  });
+  document.getElementById('car-s-total').innerHTML = `${totalAmt.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('car-s-supply').innerHTML = `${totalSupply.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('car-s-vat').innerHTML = `${totalVat.toLocaleString()}<span class="stat-unit">원</span>`;
+  document.getElementById('car-s-invoice').innerHTML = `${invoiceCnt}<span class="stat-unit">건</span>`;
+
+  // 테이블
+  const tbody = document.getElementById('car-tbody');
+  if(!filtered.length){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:40px">데이터가 없습니다.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(d => {
+    const supply = d.invoice_issued ? Math.round((d.amount||0)/1.1) : (d.amount||0);
+    const vat = d.invoice_issued ? (d.amount||0) - supply : 0;
+    const invoiceBadge = d.invoice_issued
+      ? `<span class="badge b-계약완료" style="font-size:11px">발행</span>`
+      : `<span class="badge b-신규" style="font-size:11px;opacity:0.5">미발행</span>`;
+    return `<tr style="line-height:1.8">
+      <td style="font-size:12px;white-space:nowrap">${d.date||'-'}</td>
+      <td style="font-size:13px;font-weight:700">${d.car_name||'-'}</td>
+      <td style="font-size:12px;color:var(--tx2)">${d.delivery_date||'-'}</td>
+      <td style="font-family:monospace;font-size:13px;font-weight:700;color:var(--ac)">${(d.amount||0).toLocaleString()}원</td>
+      <td style="font-family:monospace;font-size:12px;color:var(--tx)">${supply.toLocaleString()}원</td>
+      <td style="font-family:monospace;font-size:12px;color:${d.invoice_issued?'var(--am)':'var(--tx3)'}">${d.invoice_issued ? vat.toLocaleString()+'원' : '-'}</td>
+      <td style="text-align:center">${invoiceBadge}</td>
+      <td style="font-size:12px;color:var(--tx2)">${d.memo||'-'}</td>
+      <td>
+        <button class="btn btn-sm" onclick="openCarModal('${d.id}')" style="margin-bottom:3px">수정</button>
+        <button class="btn btn-sm btn-r" onclick="deleteCarIncome('${d.id}')">삭제</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 </script>
 
