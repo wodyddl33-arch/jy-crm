@@ -878,7 +878,7 @@ function goPage(id, btn) {
   if(id === 'trash') fetchTrashData();
   if(id === 'adstats') fetchAllLandingForAd();
   if(id === 'carincome') fetchCarIncome();
-  if(id === 'totalview'){ fetchCarIncome(); renderTotalView(); }
+  if(id === 'totalview') fetchCarIncome().then(()=>renderTotalView());
 }
 function goSubPage(id, btn) {
   document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('on'));
@@ -2179,7 +2179,7 @@ async function importXlsx(input){
 
 <!-- 자동차 수입 페이지 (어드민 전용) -->
 <div id="page-carincome" class="page">
-  <!-- 수입 섹션 -->
+  <!-- 상단 필터바 -->
   <div class="filter-bar" style="margin-bottom:16px">
     <span style="font-size:13px;font-weight:700;color:var(--tx)">💰 자금외수입 관리</span>
     <select class="sort-sel" id="car-period-filter" onchange="renderCarIncome()">
@@ -2203,49 +2203,93 @@ async function importXlsx(input){
     <div class="stat c-pu"><div class="stat-lbl">계산서 발행</div><div class="stat-val" id="car-s-invoice">0<span class="stat-unit">건</span></div></div>
   </div>
 
-  <!-- 수입 테이블 -->
-  <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px;padding-left:4px">▶ 수입 내역</div>
-  <div class="tbl-wrap" style="margin-bottom:20px">
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th style="width:90px">날짜</th>
-          <th style="width:90px">수입구분</th>
-          <th style="width:150px">품목명</th>
-          <th style="width:100px">출고/완료일</th>
-          <th style="width:110px">수입금액</th>
-          <th style="width:110px">공급가액</th>
-          <th style="width:90px">부가세</th>
-          <th style="width:80px">계산서</th>
-          <th>메모</th>
-          <th style="width:80px"></th>
-        </tr>
-      </thead>
-      <tbody id="car-tbody">
-        <tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
-      </tbody>
-    </table>
+  <!-- 서브탭 -->
+  <div class="sub-nav">
+    <button class="stab on" onclick="goSubPage('car-sub-monthly', this)">📊 월별 요약</button>
+    <button class="stab" onclick="goSubPage('car-sub-income', this)">▶ 수입 내역</button>
+    <button class="stab" onclick="goSubPage('car-sub-expense', this)">▶ 지출 내역</button>
   </div>
 
-  <!-- 지출 테이블 -->
-  <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px;padding-left:4px">▶ 지출 내역</div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th style="width:90px">날짜</th>
-          <th style="width:90px">지출구분</th>
-          <th style="width:200px">내용</th>
-          <th style="width:120px">지출금액</th>
-          <th style="width:80px">계산서</th>
-          <th>메모</th>
-          <th style="width:60px"></th>
-        </tr>
-      </thead>
-      <tbody id="expense-tbody">
-        <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
-      </tbody>
-    </table>
+  <!-- 월별 요약 서브페이지 -->
+  <div id="car-sub-monthly" class="subpage on">
+    <!-- 바차트 -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-hd"><span class="panel-title">월별 수입/지출 추이</span><span class="panel-sub" id="car-chart-label" style="color:var(--tx3);font-size:11px"></span></div>
+      <div class="panel-body">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;font-size:11px;color:var(--tx3)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--ac)"></span>수입</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rs)"></span>지출</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--gn)"></span>순수익</span>
+        </div>
+        <div id="car-month-chart" style="display:flex;align-items:flex-end;gap:6px;height:120px;overflow-x:auto;padding-bottom:4px"></div>
+      </div>
+    </div>
+    <!-- 월별 요약 테이블 -->
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>월</th>
+            <th style="color:var(--ac)">수입</th>
+            <th style="color:var(--gn)">공급가액</th>
+            <th style="color:var(--am)">부가세</th>
+            <th style="color:var(--rs)">지출</th>
+            <th style="color:var(--gn)">순수익</th>
+            <th>계산서</th>
+          </tr>
+        </thead>
+        <tbody id="car-monthly-tbody">
+          <tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 수입 내역 서브페이지 -->
+  <div id="car-sub-income" class="subpage">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:90px">날짜</th>
+            <th style="width:90px">수입구분</th>
+            <th style="width:150px">품목명</th>
+            <th style="width:100px">출고/완료일</th>
+            <th style="width:110px">수입금액</th>
+            <th style="width:110px">공급가액</th>
+            <th style="width:90px">부가세</th>
+            <th style="width:80px">계산서</th>
+            <th>메모</th>
+            <th style="width:80px"></th>
+          </tr>
+        </thead>
+        <tbody id="car-tbody">
+          <tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 지출 내역 서브페이지 -->
+  <div id="car-sub-expense" class="subpage">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:90px">날짜</th>
+            <th style="width:90px">지출구분</th>
+            <th style="width:200px">내용</th>
+            <th style="width:120px">지출금액</th>
+            <th style="width:80px">계산서</th>
+            <th>메모</th>
+            <th style="width:60px"></th>
+          </tr>
+        </thead>
+        <tbody id="expense-tbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -3366,6 +3410,75 @@ function renderCarIncome(){
 
   // 통합현황도 같이 갱신
   if(document.getElementById('page-totalview')?.classList.contains('on')) renderTotalView();
+
+  // ── 월별 요약 + 바차트 ──
+  const monthMap = {};
+  carData.forEach(d => {
+    const ym = (d.date||'').substring(0,7); if(!ym) return;
+    if(!monthMap[ym]) monthMap[ym] = {income:0, supply:0, vat:0, expense:0, invoice:0};
+    monthMap[ym].income += d.amount||0;
+    if(d.invoice_issued){
+      const s = Math.round((d.amount||0)/1.1);
+      monthMap[ym].supply += s;
+      monthMap[ym].vat += (d.amount||0) - s;
+      monthMap[ym].invoice++;
+    } else {
+      monthMap[ym].supply += d.amount||0;
+    }
+  });
+  expenseData.forEach(d => {
+    const ym = (d.date||'').substring(0,7); if(!ym) return;
+    if(!monthMap[ym]) monthMap[ym] = {income:0, supply:0, vat:0, expense:0, invoice:0};
+    monthMap[ym].expense += d.amount||0;
+  });
+  const sortedYms = Object.keys(monthMap).sort().reverse();
+  const mtbody = document.getElementById('car-monthly-tbody');
+  if(mtbody){
+    if(!sortedYms.length){
+      mtbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:30px">데이터가 없습니다.</td></tr>';
+    } else {
+      mtbody.innerHTML = sortedYms.map(ym => {
+        const m = monthMap[ym];
+        const net = m.income - m.expense;
+        return `<tr style="line-height:1.8">
+          <td style="font-weight:700">${ym}</td>
+          <td style="font-family:monospace;color:var(--ac);font-weight:700">${m.income.toLocaleString()}원</td>
+          <td style="font-family:monospace;color:var(--tx2)">${m.supply.toLocaleString()}원</td>
+          <td style="font-family:monospace;color:var(--am)">${m.vat?m.vat.toLocaleString()+'원':'-'}</td>
+          <td style="font-family:monospace;color:var(--rs)">${m.expense?m.expense.toLocaleString()+'원':'-'}</td>
+          <td style="font-family:monospace;font-weight:700;color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}원</td>
+          <td style="font-size:12px;color:var(--tx3)">${m.invoice}건</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+  // 바차트 (최근 6개월, 오름차순)
+  const chartEl = document.getElementById('car-month-chart');
+  if(chartEl){
+    const chartYms = Object.keys(monthMap).sort().slice(-6);
+    if(!chartYms.length){ chartEl.innerHTML = '<div style="color:var(--tx3);font-size:12px;margin:auto">데이터 없음</div>'; }
+    else {
+      const maxAmt = Math.max(...chartYms.map(ym=>Math.max(monthMap[ym].income, monthMap[ym].expense, 1)));
+      const lbl = document.getElementById('car-chart-label');
+      if(lbl) lbl.textContent = chartYms[0]+' ~ '+chartYms[chartYms.length-1];
+      chartEl.innerHTML = chartYms.map(ym => {
+        const m = monthMap[ym];
+        const net = m.income - m.expense;
+        const hIn = Math.max(Math.round(m.income/maxAmt*100), m.income?2:0);
+        const hOut = Math.max(Math.round(m.expense/maxAmt*100), m.expense?2:0);
+        const hNet = Math.max(Math.round(Math.abs(net)/maxAmt*100), net?2:0);
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:48px">
+          <div style="font-size:9px;color:var(--tx3);font-family:monospace">${Math.round(m.income/10000)}만</div>
+          <div style="display:flex;gap:2px;align-items:flex-end;width:100%;justify-content:center">
+            <div style="width:10px;height:${hIn}px;background:var(--ac);border-radius:3px 3px 0 0" title="수입 ${m.income.toLocaleString()}원"></div>
+            <div style="width:10px;height:${hOut}px;background:var(--rs);border-radius:3px 3px 0 0" title="지출 ${m.expense.toLocaleString()}원"></div>
+            <div style="width:10px;height:${hNet}px;background:${net>=0?'var(--gn)':'var(--rs)'};border-radius:3px 3px 0 0;opacity:0.7" title="순수익 ${net.toLocaleString()}원"></div>
+          </div>
+          <div style="font-size:10px;color:var(--tx3)">${ym.substring(5)}</div>
+        </div>`;
+      }).join('');
+    }
+  }
 }
 
 function renderTotalView(){
@@ -3385,22 +3498,32 @@ function renderTotalView(){
     return !yearFilter || dt.startsWith(yearFilter);
   };
 
-  // 정책자금 수입 (txList에서 계산)
-  const policyTx = txList.filter(filterFn);
+  // 정책자금 수입 (txList에서 계산) - type='수입' 기준, date 필드 사용
+  const policyTx = txList.filter(t => filterFn({date: t.date||''}));
   let policyIncome = 0;
+  let policyVatSale = 0; // 정책자금 매출부가세
   policyTx.forEach(tx => {
-    if(tx.type==='계약금'||tx.type==='자금실행수수료'||tx.type==='수수료') policyIncome += tx.amount||0;
+    if(tx.type==='수입'){
+      policyIncome += tx.amount||0;
+      policyVatSale += Math.round((tx.amount||0) * 0.1);
+    }
   });
 
   // 자금외 수입/지출
   const extraIncome = carData.filter(filterFn).reduce((s,d)=>s+(d.amount||0),0);
   const extraExpense = expenseData.filter(filterFn).reduce((s,d)=>s+(d.amount||0),0);
 
-  // 부가세
-  let totalVat = 0;
+  // 부가세 계산: 매출부가세 - 매입부가세(계산서 수취) = 실납부액
+  let carVatSale = 0;  // 자금외수입 계산서 발행분 부가세
+  let vatPurchase = 0; // 매입부가세 (지출 계산서 수취분)
   carData.filter(filterFn).forEach(d => {
-    if(d.invoice_issued) totalVat += (d.amount||0) - Math.round((d.amount||0)/1.1);
+    if(d.invoice_issued) carVatSale += (d.amount||0) - Math.round((d.amount||0)/1.1);
   });
+  expenseData.filter(filterFn).forEach(d => {
+    if(d.invoice_received) vatPurchase += (d.amount||0) - Math.round((d.amount||0)/1.1);
+  });
+  const totalVatSale = policyVatSale + carVatSale;
+  const totalVatNet = totalVatSale - vatPurchase; // 실납부 부가세
 
   const totalIncome = policyIncome + extraIncome;
   const net = totalIncome - extraExpense;
@@ -3410,29 +3533,39 @@ function renderTotalView(){
   document.getElementById('tv-total-income').innerHTML = `${totalIncome.toLocaleString()}<span class="stat-unit">원</span>`;
   document.getElementById('tv-total-expense').innerHTML = `${extraExpense.toLocaleString()}<span class="stat-unit">원</span>`;
   document.getElementById('tv-net').innerHTML = `<span style="color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}</span><span class="stat-unit">원</span>`;
-  document.getElementById('tv-vat').innerHTML = `${totalVat.toLocaleString()}<span class="stat-unit">원</span>`;
+  // 부가세: 납부액 표시 (매출부가세 - 매입부가세)
+  const vatEl = document.getElementById('tv-vat');
+  if(vatEl) vatEl.innerHTML = `${totalVatNet.toLocaleString()}<span class="stat-unit">원</span><div style="font-size:10px;color:var(--tx3);margin-top:2px">매출 ${totalVatSale.toLocaleString()} - 매입 ${vatPurchase.toLocaleString()}</div>`;
 
   // 월별 요약
   const months = {};
   const addMonth = (ym, key, amt) => {
-    if(!months[ym]) months[ym] = {policy:0, extra:0, expense:0, vat:0};
+    if(!months[ym]) months[ym] = {policy:0, extra:0, expense:0, vatSale:0, vatPurchase:0};
     months[ym][key] += amt;
   };
 
+  // 정책자금: date 필드 사용
   policyTx.forEach(tx => {
-    const ym = (tx.txDate||'').substring(0,7);
-    if(ym) addMonth(ym, 'policy', tx.amount||0);
+    if(tx.type!=='수입') return;
+    const ym = (tx.date||'').substring(0,7);
+    if(ym){
+      addMonth(ym, 'policy', tx.amount||0);
+      addMonth(ym, 'vatSale', Math.round((tx.amount||0)*0.1));
+    }
   });
   carData.filter(filterFn).forEach(d => {
     const ym = (d.date||'').substring(0,7);
     if(ym){
       addMonth(ym, 'extra', d.amount||0);
-      if(d.invoice_issued) addMonth(ym, 'vat', (d.amount||0) - Math.round((d.amount||0)/1.1));
+      if(d.invoice_issued) addMonth(ym, 'vatSale', (d.amount||0) - Math.round((d.amount||0)/1.1));
     }
   });
   expenseData.filter(filterFn).forEach(d => {
     const ym = (d.date||'').substring(0,7);
-    if(ym) addMonth(ym, 'expense', d.amount||0);
+    if(ym){
+      addMonth(ym, 'expense', d.amount||0);
+      if(d.invoice_received) addMonth(ym, 'vatPurchase', (d.amount||0) - Math.round((d.amount||0)/1.1));
+    }
   });
 
   const tbody = document.getElementById('tv-tbody');
@@ -3445,6 +3578,7 @@ function renderTotalView(){
     const m = months[ym];
     const total = m.policy + m.extra;
     const net = total - m.expense;
+    const vatNet = (m.vatSale||0) - (m.vatPurchase||0);
     return `<tr style="line-height:1.8">
       <td style="font-weight:700;font-size:13px">${ym}</td>
       <td style="font-family:monospace;color:var(--ac)">${m.policy.toLocaleString()}원</td>
@@ -3452,7 +3586,7 @@ function renderTotalView(){
       <td style="font-family:monospace;font-weight:700;color:var(--gn)">${total.toLocaleString()}원</td>
       <td style="font-family:monospace;color:var(--rs)">${m.expense.toLocaleString()}원</td>
       <td style="font-family:monospace;font-weight:700;color:${net>=0?'var(--gn)':'var(--rs)'}">${net.toLocaleString()}원</td>
-      <td style="font-family:monospace;color:var(--am)">${m.vat?m.vat.toLocaleString()+'원':'-'}</td>
+      <td style="font-family:monospace;color:var(--am)">${vatNet?vatNet.toLocaleString()+'원':'-'}</td>
     </tr>`;
   }).join('');
 }
