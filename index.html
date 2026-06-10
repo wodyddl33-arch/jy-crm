@@ -876,7 +876,7 @@ function goPage(id, btn) {
   btn.classList.add('on');
   if(id === 'landing') fetchLandingData();
   if(id === 'trash') fetchTrashData();
-  if(id === 'adstats') fetchAllLandingForAd();
+  if(id === 'adstats') { fetchAdData(); fetchAllLandingForAd(); }
   if(id === 'carincome') fetchCarIncome();
   if(id === 'totalview') fetchCarIncome().then(()=>renderTotalView()).catch(()=>renderTotalView());
 }
@@ -2470,7 +2470,7 @@ async function importXlsx(input){
     </select>
     <button class="btn btn-p" onclick="openAdInputModal()">+ 수동 입력</button>
     <label class="btn btn-g" style="cursor:pointer">📂 CSV 업로드<input type="file" accept=".csv,.xlsx" style="display:none" onchange="handleAdCsvUpload(event)"></label>
-    <button class="btn btn-r" style="margin-left:auto" onclick="if(confirm('전체 광고 데이터를 삭제하시겠습니까?')){adData=[];saveAdData();renderAdStats();}">초기화</button>
+    <button class="btn btn-r" style="margin-left:auto" onclick="if(confirm('전체 광고 데이터를 삭제하시겠습니까?')){fetch(LANDING_URL+'/rest/v1/ad_stats?id=neq.00000000-0000-0000-0000-000000000000',{method:'DELETE',headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY}}).then(()=>{adData=[];renderAdStats();})}">초기화</button>
   </div>
   <div class="stats stats-6" style="margin-bottom:20px">
     <div class="stat c-ac"><div class="stat-lbl">총 광고비</div><div class="stat-val" id="ad-s-spend">0<span class="stat-unit">원</span></div></div>
@@ -2846,9 +2846,19 @@ async function confirmEmptyTrash() {
 
 <script>
 // ========== 광고 성과 ==========
-let adData = JSON.parse(localStorage.getItem('jy_addata')||'[]');
+let adData = [];
 
-function saveAdData(){ localStorage.setItem('jy_addata', JSON.stringify(adData)); }
+async function fetchAdData(){
+  try {
+    const r = await fetch(LANDING_URL+'/rest/v1/ad_stats?order=date.desc&limit=1000', {
+      headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }
+    });
+    adData = await r.json();
+    renderAdStats();
+  } catch(e){ console.error('광고 데이터 로드 실패', e); }
+}
+
+async function saveAdData(){ /* Supabase 직접 저장 방식으로 교체 - 하위 호환용 */ }
 
 function openAdInputModal(){
   document.getElementById('ad-inp-date').value = new Date().toISOString().split('T')[0];
@@ -2862,7 +2872,7 @@ function openAdInputModal(){
 }
 function closeAdInputModal(){ document.getElementById('adInputModal').classList.remove('on'); }
 
-function saveAdInput(){
+async function saveAdInput(){
   const date = document.getElementById('ad-inp-date').value;
   if(!date){ alert('날짜를 입력해주세요.'); return; }
   const media = document.getElementById('ad-inp-media').value;
@@ -2872,14 +2882,16 @@ function saveAdInput(){
   const dbVal = document.getElementById('ad-inp-db').value;
   const db = dbVal !== '' ? parseInt(dbVal) : null;
   const memo = document.getElementById('ad-inp-memo').value.trim();
-  // 같은 날짜+매체 있으면 덮어쓰기
-  const idx = adData.findIndex(d => d.date === date && d.media === media);
   const row = { date, media, impressions, clicks, spend, db, memo };
-  if(idx >= 0) adData[idx] = row; else adData.push(row);
-  adData.sort((a,b) => b.date.localeCompare(a.date));
-  saveAdData();
-  renderAdStats();
-  closeAdInputModal();
+  try {
+    await fetch(LANDING_URL+'/rest/v1/ad_stats', {
+      method:'POST',
+      headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY, 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' },
+      body: JSON.stringify(row)
+    });
+    closeAdInputModal();
+    fetchAdData();
+  } catch(e){ alert('저장 실패: '+e.message); }
 }
 
 function getDbCountByDate(dateStr){
@@ -2963,7 +2975,9 @@ function renderAdStats(){
   }).join('');
 }
 
-function deleteAdRow(idx){
+async function deleteAdRow(idx){
+  if(!confirm('삭제하시겠습니까?')) return;
+  // 현재 필터 기준 idx번째 row 찾기
   const mediaFilter = document.getElementById('ad-media-filter')?.value || '';
   const periodFilter = parseInt(document.getElementById('ad-period-filter')?.value || '0');
   const now = new Date();
@@ -2974,7 +2988,15 @@ function deleteAdRow(idx){
     if(periodFilter){ const diff=(now-new Date(d.date))/(1000*60*60*24*30); if(diff>periodFilter) show=false; }
     if(show){ if(count===idx) fi=i; count++; }
   });
-  if(fi>=0){ adData.splice(fi,1); saveAdData(); renderAdStats(); }
+  if(fi < 0) return;
+  const row = adData[fi];
+  try {
+    await fetch(LANDING_URL+'/rest/v1/ad_stats?date=eq.'+row.date+'&media=eq.'+encodeURIComponent(row.media), {
+      method:'DELETE',
+      headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY }
+    });
+    fetchAdData();
+  } catch(e){ alert('삭제 실패: '+e.message); }
 }
 
 function handleAdCsvUpload(e){
@@ -3023,6 +3045,7 @@ function parseAdRows(rows){
   const cvCol = col('전환수') >= 0 ? col('전환수') : col('전환');
 
   let added = 0;
+  const rows_to_upsert = [];
   for(let i=headerIdx+1;i<rows.length;i++){
     const r = rows[i].map(c => String(c||'').replace(/^"|"$/g,'').trim());
     if(!r[dateCol] || !r[dateCol].trim()) continue;
@@ -3036,15 +3059,17 @@ function parseAdRows(rows){
     const spend = parseInt(String(r[spendCol]||0).replace(/,/g,''))||0;
     const db = cvCol >= 0 && r[cvCol] ? (parseInt(String(r[cvCol]).replace(/,/g,''))||null) : null;
     if(!impressions && !clicks && !spend) continue;
-    const idx = adData.findIndex(d => d.date === date && d.media === '당근');
     const row = { date, media:'당근', impressions, clicks, spend, db, memo:'' };
-    if(idx >= 0) adData[idx] = row; else adData.push(row);
+    rows_to_upsert.push(row);
     added++;
   }
-  adData.sort((a,b) => b.date.localeCompare(a.date));
-  saveAdData();
-  renderAdStats();
-  alert(`${added}건 업로드 완료!`);
+  if(!added){ alert('업로드할 데이터가 없습니다.'); return; }
+  fetch(LANDING_URL+'/rest/v1/ad_stats', {
+    method:'POST',
+    headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY, 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' },
+    body: JSON.stringify(rows_to_upsert)
+  }).then(()=>{ fetchAdData(); alert(`${added}건 업로드 완료!`); })
+    .catch(e=>alert('업로드 실패: '+e.message));
 }
 </script>
 
