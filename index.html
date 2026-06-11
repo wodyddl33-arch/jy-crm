@@ -2330,6 +2330,32 @@ async function importXlsx(input){
         </div>
       </div>
       <div class="field"><label>메모</label><input type="text" id="car-inp-memo" placeholder="예: 김철수 고객, 현금수령 등"></div>
+
+      <!-- 금융수수료 추가 섹션 -->
+      <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:12px">
+        <button type="button" onclick="toggleFinanceFee()" id="finance-fee-btn"
+          style="width:100%;background:var(--sf2);border:1px dashed var(--bd);border-radius:8px;padding:10px;font-size:13px;color:var(--tx2);cursor:pointer;text-align:left">
+          + 금융수수료 추가 (익월 입금 예정)
+        </button>
+        <div id="finance-fee-wrap" style="display:none;margin-top:10px">
+          <div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:14px">
+            <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">💡 저장 시 금융수수료가 별도 항목으로 자동 등록됩니다</div>
+            <div class="row2">
+              <div class="field"><label>입금 예정일</label><input type="date" id="car-inp-finance-date"></div>
+              <div class="field"><label>금융수수료 (원)</label><input type="number" id="car-inp-finance-amount" placeholder="0"></div>
+            </div>
+            <div class="row2">
+              <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:22px">
+                <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="checkbox" id="car-inp-finance-invoice" style="width:16px;height:16px">
+                  <span style="font-size:13px">계산서 발행</span>
+                </label>
+              </div>
+              <div class="field"><label>메모</label><input type="text" id="car-inp-finance-memo" placeholder="예: KB캐피탈 금융수수료"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-ft">
       <button class="btn" onclick="closeCarModal()">취소</button>
@@ -3171,6 +3197,29 @@ function calcContractExpiry(){
 function closeCarModal(){
   document.getElementById('carModal').classList.remove('on');
   carEditId = null;
+  const wrap = document.getElementById('finance-fee-wrap');
+  const btn = document.getElementById('finance-fee-btn');
+  if(wrap) wrap.style.display = 'none';
+  if(btn) btn.textContent = '+ 금융수수료 추가 (익월 입금 예정)';
+  const fa = document.getElementById('car-inp-finance-amount');
+  const fd = document.getElementById('car-inp-finance-date');
+  const fm = document.getElementById('car-inp-finance-memo');
+  const fi = document.getElementById('car-inp-finance-invoice');
+  if(fa) fa.value=''; if(fd) fd.value=''; if(fm) fm.value=''; if(fi) fi.checked=false;
+}
+
+function toggleFinanceFee(){
+  const wrap = document.getElementById('finance-fee-wrap');
+  const btn = document.getElementById('finance-fee-btn');
+  const isOpen = wrap.style.display !== 'none';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '+ 금융수수료 추가 (익월 입금 예정)' : '− 금융수수료 취소';
+  if(!isOpen){
+    const d = new Date();
+    d.setMonth(d.getMonth()+1);
+    d.setDate(20);
+    document.getElementById('car-inp-finance-date').value = d.toISOString().split('T')[0];
+  }
 }
 
 async function saveCarIncome(){
@@ -3222,6 +3271,32 @@ async function saveCarIncome(){
     // 계약 만료 할일 자동등록
     if(expiryDate && contractType && payload.car_name){
       registerContractTodos(payload.customer_name, payload.car_name, contractType, expiryDate);
+    }
+    // 금융수수료 별도 저장
+    const financeWrap = document.getElementById('finance-fee-wrap');
+    if(financeWrap && financeWrap.style.display !== 'none'){
+      const fDate = document.getElementById('car-inp-finance-date').value;
+      const fAmt = parseInt(document.getElementById('car-inp-finance-amount').value)||0;
+      const fInv = document.getElementById('car-inp-finance-invoice').checked;
+      const fMemo = document.getElementById('car-inp-finance-memo').value.trim();
+      if(fDate && fAmt > 0){
+        const fPayload = {
+          date: fDate,
+          delivery_date: payload.delivery_date,
+          category: '금융수수료',
+          car_name: payload.car_name,
+          customer_name: payload.customer_name,
+          contract_type: payload.contract_type,
+          amount: fAmt,
+          invoice_issued: fInv,
+          memo: fMemo || (payload.car_name ? payload.car_name+' 금융수수료' : '금융수수료')
+        };
+        await fetch(LANDING_URL+'/rest/v1/car_income', {
+          method:'POST',
+          headers:{ 'apikey':LANDING_KEY, 'Authorization':'Bearer '+LANDING_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+          body: JSON.stringify(fPayload)
+        });
+      }
     }
     closeCarModal();
     fetchCarIncome();
