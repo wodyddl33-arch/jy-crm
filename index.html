@@ -531,9 +531,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
       </div>
 
       <div class="sdiv">회원가입 정보 (기관별)</div>
-      <div style="overflow-x:auto;margin-bottom:8px;">
+      <!-- 1번 테이블: 개인인증서 / 기업인증서 / 중진공 / 소공인 -->
+      <div style="overflow-x:auto;margin-bottom:6px;">
         <table class="id-tbl">
-          <thead><tr><th style="width:55px;">구분</th><th>개인인증서</th><th>기업인증서</th><th>중진공</th><th>소공인</th><th>신보</th><th>기보</th><th>기타</th></tr></thead>
+          <thead><tr><th style="width:55px;">구분</th><th>개인인증서</th><th>기업인증서</th><th>중진공</th><th>소공인</th></tr></thead>
           <tbody>
             <tr>
               <td style="color:var(--tx3);font-size:11px;font-weight:600;padding:6px 8px;">아이디</td>
@@ -541,9 +542,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
               <td><input type="text" class="id-inp" id="li-id-corp"></td>
               <td><input type="text" class="id-inp" id="li-id-sbc"></td>
               <td><input type="text" class="id-inp" id="li-id-sme"></td>
-              <td><input type="text" class="id-inp" id="li-id-sinbo"></td>
-              <td><input type="text" class="id-inp" id="li-id-kibo"></td>
-              <td><input type="text" class="id-inp" id="li-id-etc"></td>
             </tr>
             <tr>
               <td style="color:var(--tx3);font-size:11px;font-weight:600;padding:6px 8px;">비번 🔒</td>
@@ -551,6 +549,23 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
               <td><div style="display:flex;"><input type="password" class="id-inp" id="li-pw-corp" style="flex:1;"><button class="pw-btn" onclick="togglePw('li-pw-corp',this)">👁</button></div></td>
               <td><div style="display:flex;"><input type="password" class="id-inp" id="li-pw-sbc" style="flex:1;"><button class="pw-btn" onclick="togglePw('li-pw-sbc',this)">👁</button></div></td>
               <td><div style="display:flex;"><input type="password" class="id-inp" id="li-pw-sme" style="flex:1;"><button class="pw-btn" onclick="togglePw('li-pw-sme',this)">👁</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- 2번 테이블: 신보 / 기보 / 기타 -->
+      <div style="overflow-x:auto;margin-bottom:8px;">
+        <table class="id-tbl">
+          <thead><tr><th style="width:55px;">구분</th><th>신보</th><th>기보</th><th>기타</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--tx3);font-size:11px;font-weight:600;padding:6px 8px;">아이디</td>
+              <td><input type="text" class="id-inp" id="li-id-sinbo"></td>
+              <td><input type="text" class="id-inp" id="li-id-kibo"></td>
+              <td><input type="text" class="id-inp" id="li-id-etc"></td>
+            </tr>
+            <tr>
+              <td style="color:var(--tx3);font-size:11px;font-weight:600;padding:6px 8px;">비번 🔒</td>
               <td><div style="display:flex;"><input type="password" class="id-inp" id="li-pw-sinbo" style="flex:1;"><button class="pw-btn" onclick="togglePw('li-pw-sinbo',this)">👁</button></div></td>
               <td><div style="display:flex;"><input type="password" class="id-inp" id="li-pw-kibo" style="flex:1;"><button class="pw-btn" onclick="togglePw('li-pw-kibo',this)">👁</button></div></td>
               <td><div style="display:flex;"><input type="password" class="id-inp" id="li-pw-etc" style="flex:1;"><button class="pw-btn" onclick="togglePw('li-pw-etc',this)">👁</button></div></td>
