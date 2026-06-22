@@ -333,21 +333,21 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     <table class="tbl" style="table-layout:fixed;width:100%">
       <thead>
         <tr>
-          <th style="width:75px">접수일시</th>
-          <th style="width:70px">구분</th>
-          <th style="width:80px">이름</th>
-          <th style="width:130px">연락처</th>
-          <th style="width:90px">매출</th>
-          <th style="width:140px">지역</th>
-          <th style="width:80px">업종</th>
-          <th style="width:70px">사업자</th>
-          <th style="width:100px">상태</th>
+          <th style="width:62px">접수일시</th>
+          <th style="width:62px">구분</th>
+          <th style="width:72px">이름</th>
+          <th style="width:118px">연락처</th>
+          <th style="width:60px">매출</th>
+          <th style="width:90px">지역</th>
+          <th style="width:60px">업종</th>
+          <th style="width:58px">사업자</th>
+          <th style="width:90px">상태</th>
           <th>메모</th>
-          <th style="width:50px">삭제</th>
+          <th style="width:44px">삭제</th>
         </tr>
       </thead>
       <tbody id="landing-tbody">
-        <tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:40px">불러오는 중...</td></tr>
+        <tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:40px">불러오는 중...</td></tr>
       </tbody>
     </table>
   </div>
@@ -2171,8 +2171,10 @@ async function importXlsx(input){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-#page-landing .tbl th, #page-landing .tbl td { padding:6px 8px; }
+#page-landing .tbl th, #page-landing .tbl td { padding:5px 6px; }
 #page-landing .tbl textarea { width:100%; box-sizing:border-box; }
+#page-landing .tbl th { font-size:9px; }
+#page-landing .sort-sel { width:100%; }
 </style>
 <!-- DB접수 현황 페이지 -->
 <div id="page-trash" class="page">
@@ -2662,22 +2664,23 @@ function renderLandingTable() {
     const fmtPhone = rawPhone.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3').replace(/^(\d{3})-?(\d{3,4})-?(\d{4})$/, '$1-$2-$3');
     const sel = `<select class="sort-sel" style="font-size:11px;padding:3px 4px" onchange="updateLandingStatus('${r.id}',this.value)">
       ${opts.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select>`;
-    return `<tr style="line-height:1.8">
-      <td style="font-size:11px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
+    return `<tr style="line-height:1.6">
+      <td style="font-size:10px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
       <td style="text-align:center">${srcLabel(r.source)}</td>
-      <td style="font-weight:700;white-space:nowrap;font-size:13px">${r.company_name||'-'}</td>
-      <td style="font-family:monospace;font-size:13px;white-space:nowrap;letter-spacing:0.04em;color:var(--tx)">${fmtPhone||'-'}</td>
-      <td style="font-size:13px;color:var(--tx);white-space:nowrap">${r.revenue||'-'}</td>
-      <td style="font-size:13px;color:var(--tx);white-space:nowrap">${r.region||'-'}</td>
-      <td style="font-size:13px;color:var(--tx);white-space:nowrap">${r.business_type||'-'}</td>
-      <td style="font-size:13px;color:var(--tx);white-space:nowrap">${r.biz_type||'-'}</td>
-      <td>${sel}</td>
+      <td style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">${r.company_name||'-'}</td>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap;letter-spacing:0.02em;color:var(--tx)">${fmtPhone||'-'}</td>
+      <td style="font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.revenue||'-'}</td>
+      <td style="font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.region||'-'}</td>
+      <td style="font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.business_type||'-'}</td>
+      <td style="font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.biz_type||'-'}</td>
+      <td><select class="sort-sel" style="font-size:11px;padding:3px 2px;width:100%" onchange="updateLandingStatus('${r.id}',this.value)">
+        ${opts.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
       <td>
-        <textarea style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--tx);width:100%;min-height:90px;resize:vertical;font-family:inherit"
+        <textarea style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--tx);width:100%;min-height:80px;resize:vertical;font-family:inherit"
           placeholder="메모" onblur="updateLandingMemo('${r.id}',this.value)">${r.memo||''}</textarea>
       </td>
-      <td>
-        <button class="btn btn-sm btn-r" onclick="deleteLandingRow('${r.id}')">삭제</button>
+      <td style="text-align:center">
+        <button class="btn btn-sm btn-r" style="font-size:10px;padding:3px 6px" onclick="deleteLandingRow('${r.id}')">삭제</button>
       </td>
     </tr>`;
   }).join('');
