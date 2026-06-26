@@ -322,9 +322,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     </select>
     <select class="sort-sel" id="landing-source-filter" onchange="renderLandingTable()">
       <option value="">전체 유입경로</option>
-      <option value="landing">랜딩페이지</option>
+      <option value="landing">랜딩(JY정책자금)</option>
       <option value="meta_정책자금">메타_정책자금</option>
       <option value="meta_장기렌트">메타_장기렌트</option>
+      <option value="landing_장기렌트">랜딩(올카렌트)</option>
     </select>
     <button class="btn btn-p" onclick="fetchLandingData()">🔄 새로고침</button>
     <button class="btn btn-g" onclick="downloadLandingExcel()">📥 엑셀 다운로드</button>
