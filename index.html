@@ -2753,6 +2753,8 @@ function confirm2chaCalendar() {
 }
 
 async function updateLandingMemo(id, memo) {
+  const row = landingData.find(r=>r.id===id);
+  if(row) row.memo = memo;
   await fetch(LANDING_URL+'/rest/v1/landing_inquiries?id=eq.'+id, {
     method:'PATCH',
     headers:{'apikey':LANDING_KEY,'Authorization':'Bearer '+LANDING_KEY,'Content-Type':'application/json'},
