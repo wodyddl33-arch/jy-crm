@@ -346,11 +346,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
           <th style="width:58px">사업자</th>
           <th style="width:90px">상태</th>
           <th>메모</th>
+          <th style="width:44px">수정</th>
           <th style="width:44px">삭제</th>
         </tr>
       </thead>
       <tbody id="landing-tbody">
-        <tr><td colspan="12" style="text-align:center;color:var(--tx3);padding:40px">불러오는 중...</td></tr>
+        <tr><td colspan="13" style="text-align:center;color:var(--tx3);padding:40px">불러오는 중...</td></tr>
       </tbody>
     </table>
   </div>
@@ -425,7 +426,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
 
 <div class="overlay" id="modal-landing-add">
   <div class="modal modal-sm">
-    <div class="modal-hd"><div class="modal-title">DB 수동 등록</div><button class="modal-close" onclick="closeModal('modal-landing-add')">✕</button></div>
+    <div class="modal-hd"><div class="modal-title" id="la-modal-title">DB 수동 등록</div><button class="modal-close" onclick="closeModal('modal-landing-add')">✕</button></div>
     <div class="modal-body">
       <div class="field">
         <label>유입경로</label>
@@ -473,7 +474,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     </div>
     <div class="modal-ft">
       <button class="btn" onclick="closeModal('modal-landing-add')">취소</button>
-      <button class="btn btn-p" onclick="saveLandingManual()">등록하기</button>
+      <button class="btn btn-p" id="la-save-btn" onclick="saveLandingManual()">등록하기</button>
     </div>
   </div>
 </div>
@@ -2679,47 +2680,79 @@ async function fetchLandingData() {
   } catch(e) { console.error('랜딩 데이터 로드 실패', e); }
 }
 
-function openLandingAddModal() {
-  ['la-company','la-owner','la-phone','la-revenue','la-region','la-biztype','la-memo'].forEach(id => {
-    const el = document.getElementById(id); if(el) el.value='';
-  });
-  document.getElementById('la-source').value = 'landing';
-  document.getElementById('la-owner-type').value = '';
-  document.getElementById('la-status').value = '신규';
+let landingEditId = null;
+
+function openLandingAddModal(id) {
+  landingEditId = id || null;
+  const titleEl = document.getElementById('la-modal-title');
+  const saveBtn = document.getElementById('la-save-btn');
+
+  if(landingEditId) {
+    // 수정 모드: 기존 값 채우기
+    const row = landingData.find(r => r.id === landingEditId);
+    if(!row) { alert('데이터를 찾을 수 없습니다'); return; }
+    document.getElementById('la-source').value = row.source || 'landing';
+    document.getElementById('la-company').value = row.company_name || '';
+    document.getElementById('la-owner').value = row.owner_name || '';
+    document.getElementById('la-phone').value = row.phone || '';
+    document.getElementById('la-revenue').value = row.revenue || '';
+    document.getElementById('la-region').value = row.region || '';
+    document.getElementById('la-biztype').value = row.business_type || '';
+    document.getElementById('la-owner-type').value = row.biz_type || '';
+    document.getElementById('la-status').value = row.status || '신규';
+    document.getElementById('la-memo').value = row.memo || '';
+    if(titleEl) titleEl.textContent = 'DB 정보 수정';
+    if(saveBtn) saveBtn.textContent = '수정하기';
+  } else {
+    // 신규 등록 모드: 초기화
+    ['la-company','la-owner','la-phone','la-revenue','la-region','la-biztype','la-memo'].forEach(fid => {
+      const el = document.getElementById(fid); if(el) el.value='';
+    });
+    document.getElementById('la-source').value = 'landing';
+    document.getElementById('la-owner-type').value = '';
+    document.getElementById('la-status').value = '신규';
+    if(titleEl) titleEl.textContent = 'DB 수동 등록';
+    if(saveBtn) saveBtn.textContent = '등록하기';
+  }
   document.getElementById('modal-landing-add').classList.add('on');
 }
 
 async function saveLandingManual() {
   const company = document.getElementById('la-company').value.trim();
   const phone = document.getElementById('la-phone').value.trim();
-  if(!company || !phone) { alert('상호명과 연락처는 필수입니다'); return; }
+  if(!company && !phone) { alert('상호명 또는 연락처 중 하나는 입력해주세요'); return; }
   const payload = {
     source: document.getElementById('la-source').value,
-    company_name: company,
+    company_name: company || null,
     owner_name: document.getElementById('la-owner').value.trim() || null,
-    phone: phone.replace(/[^0-9]/g,''),
+    phone: phone.replace(/[^0-9]/g,'') || null,
     revenue: document.getElementById('la-revenue').value.trim() || null,
     region: document.getElementById('la-region').value.trim() || null,
     business_type: document.getElementById('la-biztype').value.trim() || null,
     biz_type: document.getElementById('la-owner-type').value || null,
     status: document.getElementById('la-status').value,
-    memo: document.getElementById('la-memo').value.trim() || null,
-    is_deleted: false
+    memo: document.getElementById('la-memo').value.trim() || null
   };
+  if(!landingEditId) payload.is_deleted = false;
+
   try {
-    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries', {
-      method: 'POST',
+    const url = landingEditId
+      ? LANDING_URL+'/rest/v1/landing_inquiries?id=eq.'+landingEditId
+      : LANDING_URL+'/rest/v1/landing_inquiries';
+    const res = await fetch(url, {
+      method: landingEditId ? 'PATCH' : 'POST',
       headers: {
         'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY,
         'Content-Type': 'application/json', 'Prefer': 'return=minimal'
       },
       body: JSON.stringify(payload)
     });
-    if(!res.ok) { const t = await res.text(); alert('등록 실패: '+t); return; }
+    if(!res.ok) { const t = await res.text(); alert((landingEditId?'수정':'등록')+' 실패: '+t); return; }
     closeModal('modal-landing-add');
+    landingEditId = null;
     fetchLandingData();
   } catch(e) {
-    alert('등록 중 오류가 발생했습니다');
+    alert((landingEditId?'수정':'등록')+' 중 오류가 발생했습니다');
     console.error(e);
   }
 }
@@ -2751,7 +2784,7 @@ function renderLandingTable() {
   const tbody = document.getElementById('landing-tbody');
   if(!tbody) return;
   if(!filtered.length) {
-    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--tx3);padding:40px">접수된 데이터가 없습니다</td></tr>';
+    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--tx3);padding:40px">접수된 데이터가 없습니다</td></tr>';
     return;
   }
   const opts = ['신규','부재','1차심사완료','2차심사예정','검토중','불량'];
@@ -2782,6 +2815,9 @@ function renderLandingTable() {
       <td>
         <textarea style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--tx);width:100%;min-height:80px;resize:vertical;font-family:inherit"
           placeholder="메모" onblur="updateLandingMemo('${r.id}',this.value)">${r.memo||''}</textarea>
+      </td>
+      <td style="text-align:center">
+        <button class="btn btn-sm" style="font-size:10px;padding:3px 6px" onclick="openLandingAddModal('${r.id}')">수정</button>
       </td>
       <td style="text-align:center">
         <button class="btn btn-sm btn-r" style="font-size:10px;padding:3px 6px" onclick="deleteLandingRow('${r.id}')">삭제</button>
