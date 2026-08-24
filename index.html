@@ -329,6 +329,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     </select>
     <button class="btn btn-p" onclick="fetchLandingData()">🔄 새로고침</button>
     <button class="btn btn-g" onclick="downloadLandingExcel()">📥 엑셀 다운로드</button>
+    <button class="btn btn-p" style="margin-left:auto" onclick="openLandingAddModal()">+ 수동 등록</button>
   </div>
   <div class="tbl-wrap">
     <table class="tbl" style="table-layout:fixed;width:100%">
@@ -418,6 +419,61 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     <div class="modal-ft">
       <button class="btn" onclick="closeModal('modal-import')">취소</button>
       <button class="btn btn-p" onclick="saveImported()">등록하기</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-landing-add">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><div class="modal-title">DB 수동 등록</div><button class="modal-close" onclick="closeModal('modal-landing-add')">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>유입경로</label>
+        <select id="la-source">
+          <option value="landing">랜딩(JY정책자금)</option>
+          <option value="meta_정책자금">메타_정책자금</option>
+          <option value="meta_장기렌트">메타_장기렌트</option>
+          <option value="landing_장기렌트">랜딩(올카렌트)</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="field"><label>상호명</label><input id="la-company" placeholder="상호명"></div>
+        <div class="field"><label>대표자명</label><input id="la-owner" placeholder="대표자명"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>연락처</label><input id="la-phone" placeholder="01012345678"></div>
+        <div class="field"><label>매출</label><input id="la-revenue" placeholder="예: 3억"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>지역</label><input id="la-region" placeholder="예: 서울 금천구"></div>
+        <div class="field"><label>업종</label><input id="la-biztype" placeholder="예: 도소매"></div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>사업자 구분</label>
+          <select id="la-owner-type">
+            <option value="">선택안함</option>
+            <option value="개인사업자">개인사업자</option>
+            <option value="법인사업자">법인사업자</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>상태</label>
+          <select id="la-status">
+            <option>신규</option>
+            <option>부재</option>
+            <option>1차심사완료</option>
+            <option>2차심사예정</option>
+            <option>검토중</option>
+            <option>불량</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>메모</label><textarea id="la-memo" rows="3" placeholder="메모 (예: OO대행사 전달건)"></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeModal('modal-landing-add')">취소</button>
+      <button class="btn btn-p" onclick="saveLandingManual()">등록하기</button>
     </div>
   </div>
 </div>
@@ -2621,6 +2677,51 @@ async function fetchLandingData() {
     // 광고 성과 탭이 열려있으면 DB수 재계산
     if(document.getElementById('page-adstats')?.classList.contains('on')) renderAdStats();
   } catch(e) { console.error('랜딩 데이터 로드 실패', e); }
+}
+
+function openLandingAddModal() {
+  ['la-company','la-owner','la-phone','la-revenue','la-region','la-biztype','la-memo'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('la-source').value = 'landing';
+  document.getElementById('la-owner-type').value = '';
+  document.getElementById('la-status').value = '신규';
+  document.getElementById('modal-landing-add').classList.add('on');
+}
+
+async function saveLandingManual() {
+  const company = document.getElementById('la-company').value.trim();
+  const phone = document.getElementById('la-phone').value.trim();
+  if(!company || !phone) { alert('상호명과 연락처는 필수입니다'); return; }
+  const payload = {
+    source: document.getElementById('la-source').value,
+    company_name: company,
+    owner_name: document.getElementById('la-owner').value.trim() || null,
+    phone: phone.replace(/[^0-9]/g,''),
+    revenue: document.getElementById('la-revenue').value.trim() || null,
+    region: document.getElementById('la-region').value.trim() || null,
+    business_type: document.getElementById('la-biztype').value.trim() || null,
+    biz_type: document.getElementById('la-owner-type').value || null,
+    status: document.getElementById('la-status').value,
+    memo: document.getElementById('la-memo').value.trim() || null,
+    is_deleted: false
+  };
+  try {
+    const res = await fetch(LANDING_URL+'/rest/v1/landing_inquiries', {
+      method: 'POST',
+      headers: {
+        'apikey': LANDING_KEY, 'Authorization': 'Bearer '+LANDING_KEY,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) { const t = await res.text(); alert('등록 실패: '+t); return; }
+    closeModal('modal-landing-add');
+    fetchLandingData();
+  } catch(e) {
+    alert('등록 중 오류가 발생했습니다');
+    console.error(e);
+  }
 }
 
 // 페이지 로드시 배지 자동 카운트
