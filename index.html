@@ -153,6 +153,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
 <button class="ntab" onclick="goPage('adstats',this)">📊 광고 성과</button>
 <button class="ntab" id="tab-carincome" onclick="goPage('carincome',this)">💰 자금외수입</button>
 <button class="ntab" id="tab-totalview" onclick="goPage('totalview',this)">📈 통합현황</button>
+<button class="ntab" onclick="goPage('bid',this)">🎲 투찰금액 계산기</button>
 </div>
 
 <div class="main">
@@ -337,12 +338,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
         <tr>
           <th style="width:62px">접수일시</th>
           <th style="width:62px">구분</th>
-          <th style="width:110px">상호명</th>
-          <th style="width:72px">대표자명</th>
-          <th style="width:118px">연락처</th>
-          <th style="width:60px">매출</th>
-          <th style="width:90px">지역</th>
-          <th style="width:60px">업종</th>
+          <th style="width:130px">상호명</th>
+          <th style="width:82px">대표자명</th>
+          <th style="width:108px">연락처</th>
+          <th style="width:52px">매출</th>
+          <th style="width:80px">지역</th>
+          <th style="width:52px">업종</th>
           <th style="width:58px">사업자</th>
           <th style="width:90px">상태</th>
           <th>메모</th>
@@ -962,6 +963,67 @@ function goPage(id, btn) {
   if(id === 'carincome') fetchCarIncome();
   if(id === 'totalview') fetchCarIncome().then(()=>renderTotalView()).catch(()=>renderTotalView());
 }
+// ===== 투찰금액 계산기 =====
+function bidRandomAdjustment() {
+  const steps = [];
+  for (let v = -0.7; v <= 0.7001; v += 0.1) steps.push(Math.round(v * 10) / 10);
+  return steps[Math.floor(Math.random() * steps.length)];
+}
+
+function bidRoll() {
+  const adj = bidRandomAdjustment();
+  document.getElementById('bid-adjustment').value = adj;
+  bidCalc();
+}
+
+function bidCalc() {
+  const base = parseFloat(document.getElementById('bid-base').value);
+  const rate = parseFloat(document.getElementById('bid-rate').value);
+  const range = parseFloat(document.getElementById('bid-range').value);
+  let adjustment = parseFloat(document.getElementById('bid-adjustment').value);
+
+  if (isNaN(base) || isNaN(rate) || isNaN(range)) {
+    alert('기초금액, 공고 하한율, 공고 허용범위를 입력해주세요');
+    return;
+  }
+  if (isNaN(adjustment)) {
+    adjustment = bidRandomAdjustment();
+    document.getElementById('bid-adjustment').value = adjustment;
+  }
+  if (adjustment < -1 || adjustment > 1) {
+    if (!confirm('조정치가 권장범위(±1%)를 벗어났습니다. 그대로 계산할까요?')) return;
+  }
+
+  const noise = Math.floor(Math.random() * 1000); // 0~999
+  const centerRate = Math.trunc(rate * 10) / 10; // 소수 첫째자리까지 절사
+  const finalRate = centerRate + adjustment + noise / 10000;
+  const rawAmount = base * finalRate / 100;
+  const finalAmount = Math.round(rawAmount / 10) * 10;
+
+  const lowerBound = rate - range;
+  const upperBound = rate + range;
+  const inRange = finalRate >= lowerBound && finalRate <= upperBound;
+  const adjOk = adjustment >= -1 && adjustment <= 1;
+
+  document.getElementById('bid-result').style.display = 'block';
+  document.getElementById('bid-final-amount').textContent = finalAmount.toLocaleString('ko-KR') + '원';
+  document.getElementById('bid-center').textContent = centerRate.toFixed(1) + '%';
+  document.getElementById('bid-adj-display').textContent = (adjustment >= 0 ? '+' : '') + adjustment.toFixed(1) + '%';
+  document.getElementById('bid-noise-display').textContent = String(noise).padStart(3, '0');
+  document.getElementById('bid-rate-final').textContent = finalRate.toFixed(4) + '%';
+  document.getElementById('bid-raw-amount').textContent = rawAmount.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + '원';
+
+  const valDiv = document.getElementById('bid-validation');
+  valDiv.innerHTML = `
+    <div style="padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${inRange ? '#e8f8ee' : '#fdeaea'};color:${inRange ? '#1a7f4e' : '#c0392b'}">
+      ${inRange ? '✅ 공고 범위 내 (정상)' : '⚠️ 공고 범위 이탈 - 재확인 필요'} (허용: ${lowerBound.toFixed(3)}% ~ ${upperBound.toFixed(3)}%)
+    </div>
+    <div style="padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;background:${adjOk ? '#e8f8ee' : '#fdeaea'};color:${adjOk ? '#1a7f4e' : '#c0392b'}">
+      ${adjOk ? '✅ 권장 조정범위(±1%) 내' : '⚠️ 권장 조정범위(±1%) 초과'}
+    </div>
+  `;
+}
+
 function goSubPage(id, btn) {
   const targetEl = document.getElementById(id);
   if(!targetEl) return;
@@ -2563,6 +2625,49 @@ async function importXlsx(input){
   </div>
 </div>
 
+<!-- 투찰금액 계산기 페이지 -->
+<div id="page-bid" class="page">
+  <div style="max-width:640px;margin:0 auto;padding:8px 4px 40px">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px;color:var(--tx)">🎲 투찰금액 계산기</h2>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:20px">기초금액 · 공고 하한율 · 공고 허용범위만 입력하면, 조정치를 권장범위(±0.7%) 내에서 랜덤으로 뽑아 투찰금액을 자동 산출합니다.</p>
+
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px">
+      <div class="row3">
+        <div class="field"><label>기초금액 (원)</label><input type="number" id="bid-base" placeholder="예: 18454000"></div>
+        <div class="field"><label>공고 하한율 (%)</label><input type="number" step="0.001" id="bid-rate" placeholder="예: 90"></div>
+        <div class="field"><label>공고 허용범위 (±%)</label><input type="number" step="0.1" id="bid-range" placeholder="예: 2"></div>
+      </div>
+      <div class="field">
+        <label>조정치 (%) — 권장 -0.7 ~ +0.7</label>
+        <div style="display:flex;gap:8px">
+          <input type="number" step="0.1" id="bid-adjustment" style="flex:1" placeholder="뽑기 버튼을 누르거나 직접 입력">
+          <button class="btn btn-p" style="white-space:nowrap" onclick="bidRoll()">🎲 조정치 뽑기</button>
+        </div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:6px" onclick="bidCalc()">🔄 다시 계산 (조정치 유지, 노이즈만 재생성)</button>
+    </div>
+
+    <div id="bid-result" style="display:none">
+      <div style="background:var(--acb);border:1px solid var(--acbd);border-radius:12px;padding:20px;margin-bottom:16px;text-align:center">
+        <div style="font-size:11px;color:var(--tx3);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">★ 최종 투찰금액</div>
+        <div id="bid-final-amount" style="font-size:32px;font-weight:800;color:var(--ac)"></div>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:16px">
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <tr><td style="padding:6px 0;color:var(--tx3)">센터 기준율 (절사)</td><td style="text-align:right;font-weight:600" id="bid-center"></td></tr>
+          <tr><td style="padding:6px 0;color:var(--tx3)">적용 조정치</td><td style="text-align:right;font-weight:600" id="bid-adj-display"></td></tr>
+          <tr><td style="padding:6px 0;color:var(--tx3)">노이즈 (자동생성)</td><td style="text-align:right;font-weight:600" id="bid-noise-display"></td></tr>
+          <tr><td style="padding:6px 0;color:var(--tx3)">최종 투찰요율</td><td style="text-align:right;font-weight:600" id="bid-rate-final"></td></tr>
+          <tr><td style="padding:6px 0;color:var(--tx3)">투찰금액 (반올림 전)</td><td style="text-align:right;font-weight:600" id="bid-raw-amount"></td></tr>
+        </table>
+      </div>
+
+      <div id="bid-validation" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- 광고 성과 페이지 -->
 <div id="page-adstats" class="page">
   <div class="filter-bar" style="margin-bottom:16px">
@@ -2803,8 +2908,8 @@ function renderLandingTable() {
     return `<tr style="line-height:1.6">
       <td style="font-size:10px;color:var(--tx2);white-space:nowrap;text-align:center">${ds}</td>
       <td style="text-align:center">${srcLabel(r.source)}</td>
-      <td style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">${r.company_name||'-'}</td>
-      <td style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx)">${r.owner_name||'-'}</td>
+      <td style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${(r.company_name||'').replace(/"/g,'&quot;')}">${r.company_name||'-'}</td>
+      <td style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx)" title="${(r.owner_name||'').replace(/"/g,'&quot;')}">${r.owner_name||'-'}</td>
       <td style="font-family:monospace;font-size:11px;white-space:nowrap;letter-spacing:0.02em;color:var(--tx)">${fmtPhone||'-'}</td>
       <td style="font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.revenue||'-'}</td>
       <td style="font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.region||'-'}</td>
