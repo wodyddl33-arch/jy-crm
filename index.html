@@ -123,8 +123,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     <div class="login-err" id="login-err"></div>
     <input class="login-inp" type="password" id="login-pw" placeholder="관리자 비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="login-btn login-btn-admin" onclick="doLogin()">🔐 관리자로 로그인</button>
-    <div class="login-divider">또는</div>
-    <button class="login-btn login-btn-guest" onclick="doGuestLogin()">👁️ 게스트로 보기 (읽기 전용)</button>
   </div>
 </div>
 
@@ -895,14 +893,6 @@ function doLogin(){
   }
 }
 
-function doGuestLogin(){
-  document.getElementById('login-page').style.display='none';
-  document.getElementById('guest-badge').style.display='block';
-  isGuest=true;
-  sessionStorage.setItem('jy_auth','guest');
-  applyGuestMode();
-}
-
 function applyGuestMode(){
   // 수정/저장/삭제/추가 버튼 숨김
   const selectors=[
@@ -935,11 +925,8 @@ window.addEventListener('load', async () => {
     document.getElementById('login-page').style.display='none';
     document.getElementById('guest-badge').style.display='none';
     isGuest=false;
-  } else if(_auth === 'guest'){
-    document.getElementById('login-page').style.display='none';
-    document.getElementById('guest-badge').style.display='block';
-    isGuest=true;
-    applyGuestMode();
+  } else {
+    sessionStorage.removeItem('jy_auth');
   }
   showLoading();
   await supaLoad();
